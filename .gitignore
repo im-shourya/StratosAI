@@ -1,0 +1,16 @@
+# Node dependencies
+node_modules/
+
+# Python/ML environments and large files
+ml/venv/
+ml/data/
+__pycache__/
+*.pkl
+*.pt
+
+# Environment variables (Never commit these!)
+.env
+.env.local
+
+# OS generated files
+.DS_Store
