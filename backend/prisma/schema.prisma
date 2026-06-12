@@ -1,0 +1,67 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String       @id @default(uuid()) @db.Uuid
+  assessments Assessment[]
+}
+
+model Assessment {
+  id           String       @id @default(uuid()) @db.Uuid
+  user_id      String       @db.Uuid
+  user         User         @relation(fields: [user_id], references: [id])
+  session_id   String       @db.VarChar
+  company_name String       @db.VarChar
+  industry     String       @db.VarChar
+  company_size String       @db.VarChar
+  ai_budget    Decimal      @db.Decimal
+  ai_maturity  Int          @db.Integer
+  status       String       @db.VarChar
+  created_at   DateTime     @default(now()) @db.Timestamp(6)
+  predictions  Prediction[]
+  initiatives  Initiative[]
+}
+
+model Prediction {
+  id              String     @id @default(uuid()) @db.Uuid
+  assessment_id   String     @db.Uuid
+  assessment      Assessment @relation(fields: [assessment_id], references: [id])
+  roi_12m         Decimal    @db.Decimal
+  roi_36m         Decimal    @db.Decimal
+  success_prob    Decimal    @db.Decimal
+  maturity_score  Int        @db.Integer
+  risk_technical  Decimal    @db.Decimal
+  risk_financial  Decimal    @db.Decimal
+  risk_talent     Decimal    @db.Decimal
+  risk_regulatory Decimal    @db.Decimal
+  model_version   String     @db.VarChar
+}
+
+model Initiative {
+  id               String     @id @default(uuid()) @db.Uuid
+  assessment_id    String     @db.Uuid
+  assessment       Assessment @relation(fields: [assessment_id], references: [id])
+  name             String     @db.VarChar
+  use_case         String     @db.VarChar
+  allocated_budget Decimal    @db.Decimal
+  expected_roi     Decimal    @db.Decimal
+  risk_score       Decimal    @db.Decimal
+  priority         Int        @db.Integer
+  timeline_months  Int        @db.Integer
+}
+
+model Benchmark {
+  id              String  @id @default(uuid()) @db.Uuid
+  industry        String  @db.VarChar
+  use_case        String  @db.VarChar
+  company_size    String  @db.VarChar
+  avg_roi_pct     Decimal @db.Decimal
+  success_rate    Decimal @db.Decimal
+  avg_timeline_mo Int     @db.Integer
+  data_year       Int     @db.Integer
+}
