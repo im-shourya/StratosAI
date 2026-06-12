@@ -7,8 +7,15 @@ datasource db {
 }
 
 model User {
-  id          String       @id @default(uuid()) @db.Uuid
-  assessments Assessment[]
+  id           String       @id @default(uuid()) @db.Uuid
+  email        String       @unique @db.VarChar
+  password     String       @db.VarChar
+  company_name String?      @db.VarChar
+  industry     String?      @db.VarChar
+  valuation    String?      @db.VarChar
+  country      String?      @db.VarChar
+  created_at   DateTime     @default(now()) @db.Timestamp(6)
+  assessments  Assessment[]
 }
 
 model Assessment {
