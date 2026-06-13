@@ -1,6 +1,10 @@
 {
   "name": "stratosai-workspace",
   "private": true,
+  "scripts": {
+    "build": "npm run build -w backend",
+    "start": "npm run start:prod -w backend"
+  },
   "workspaces": [
     "frontend",
     "backend",
