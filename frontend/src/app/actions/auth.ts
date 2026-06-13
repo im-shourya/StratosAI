@@ -21,7 +21,8 @@ export async function loginAction(formData: FormData) {
     const data = await res.json();
     
     // Store JWT in an HTTP-only cookie
-    cookies().set('stratos_token', data.access_token, {
+    const cookieStore = await cookies();
+    cookieStore.set('stratos_token', data.access_token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
@@ -36,6 +37,7 @@ export async function loginAction(formData: FormData) {
 }
 
 export async function logoutAction() {
-  cookies().delete('stratos_token');
+  const cookieStore = await cookies();
+  cookieStore.delete('stratos_token');
   return { success: true };
 }
