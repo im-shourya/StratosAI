@@ -35,6 +35,8 @@ export class AssessmentsController {
 
   @Post(':id/analyze')
   async analyze(@Param('id') id: string) {
-    return this.assessmentsService.analyzeAssessment(id);
+    // In a real app, userId would be extracted from the JWT token via req.user
+    const dummyUserId = 'user_from_jwt_token'; 
+    return this.assessmentsService.analyzeAssessment(id, dummyUserId);
   }
 }

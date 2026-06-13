@@ -12,6 +12,7 @@ interface ChatState {
   appendStreamChunk: (chunk: string) => void;
   setStreaming: (isStreaming: boolean) => void;
   clearMessages: () => void;
+  resetSession: () => void;
 }
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -40,4 +41,5 @@ export const useChatStore = create<ChatState>((set) => ({
 
   setStreaming: (isStreaming: boolean) => set({ isStreaming }),
   clearMessages: () => set({ messages: [], isStreaming: false }),
+  resetSession: () => set({ messages: [], isStreaming: false }), // explicit session reset to clear contexts
 }));
