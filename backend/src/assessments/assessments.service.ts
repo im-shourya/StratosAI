@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PrismaService } from '../prisma/prisma.service';
@@ -7,14 +7,19 @@ import { StartAssessmentDto } from './dto/start-assessment.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { MlIntegrationService } from '../ml-integration/ml-integration.service';
 import { LlmService } from '../chat/llm.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class AssessmentsService {
+  private readonly logger = new Logger(AssessmentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     @InjectModel(Conversation.name) private conversationModel: Model<Conversation>,
     private readonly mlIntegration: MlIntegrationService,
-    private readonly llmService: LlmService
+    private readonly llmService: LlmService,
+    @InjectQueue('analysisQueue') private analysisQueue: Queue
   ) {}
 
   async startAssessment(data: StartAssessmentDto) {
@@ -94,39 +99,60 @@ export class AssessmentsService {
   }
 
   async analyzeAssessment(assessmentId: string) {
+    const job = await this.analysisQueue.add('analyze', { assessmentId });
+    return { jobId: job.id, status: 'QUEUED' };
+  }
+
+  async executeAnalysis(assessmentId: string) {
     const assessment = await this.getAssessment(assessmentId);
 
-    // Call ML Integration
-    const features = {
-      industry: assessment.industry,
-      budget: assessment.ai_budget,
-      maturity: assessment.ai_maturity,
-      ...assessment.extracted_data
-    };
-    
-    const mlResults = await this.mlIntegration.predictFull(features);
+    try {
+      // Call ML Integration
+      const features = {
+        industry: assessment.industry,
+        budget: assessment.ai_budget,
+        maturity: assessment.ai_maturity,
+        ...assessment.extracted_data
+      };
+      
+      const mlResults = await this.mlIntegration.predictFull(features);
 
-    // Save ML results to predictions table
-    await this.prisma.prediction.create({
-      data: {
-        assessment_id: assessment.id,
-        roi_12m: mlResults.roi?.roi_12m || 0,
-        roi_36m: mlResults.roi?.roi_36m || 0,
-        success_prob: mlResults.success_probability || 0,
-        maturity_score: mlResults.maturity?.maturity_tier || 1,
-        risk_technical: mlResults.risk_scores?.technical || 0,
-        risk_financial: mlResults.risk_scores?.financial || 0,
-        risk_talent: mlResults.risk_scores?.talent || 0,
-        risk_regulatory: mlResults.risk_scores?.regulatory || 0,
-        model_version: '1.0.0'
-      }
-    });
+      // Save ML results to predictions table
+      await this.prisma.prediction.create({
+        data: {
+          assessment_id: assessment.id,
+          roi_12m: mlResults.roi?.roi_12m || 0,
+          roi_36m: mlResults.roi?.roi_36m || 0,
+          success_prob: mlResults.success_probability || 0,
+          maturity_score: mlResults.maturity?.maturity_tier || 1,
+          risk_technical: mlResults.risk_scores?.technical || 0,
+          risk_financial: mlResults.risk_scores?.financial || 0,
+          risk_talent: mlResults.risk_scores?.talent || 0,
+          risk_regulatory: mlResults.risk_scores?.regulatory || 0,
+          model_version: '1.0.0'
+        }
+      });
 
-    await this.prisma.assessment.update({
-      where: { id: assessment.id },
-      data: { status: 'COMPLETED' }
-    });
+      // Update Assessment to COMPLETED in Postgres
+      await this.prisma.assessment.update({
+        where: { id: assessment.id },
+        data: { status: 'COMPLETED' }
+      });
 
-    return mlResults;
+      // In a real scenario, here we would also generate the LLM report and save to MongoDB via ReportsService
+      // If saving to MongoDB fails, it will throw and go to catch block
+
+      return mlResults;
+    } catch (error: any) {
+      this.logger.error(`Analysis failed for ${assessmentId}, performing soft rollback. Error: ${error.message}`);
+      
+      // Soft Delete / Rollback
+      await this.prisma.assessment.update({
+        where: { id: assessmentId },
+        data: { status: 'FAILED' }
+      });
+
+      throw error;
+    }
   }
 }

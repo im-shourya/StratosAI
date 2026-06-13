@@ -1,0 +1,9 @@
+{
+  "name": "stratosai-workspace",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "packages/*"
+  ]
+}
