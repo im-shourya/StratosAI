@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: stratosai-postgres
+    environment:
+      POSTGRES_USER: stratos
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stratosai
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stratos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:6
+    container_name: stratosai-mongo
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodata:/data/db
+
+  redis:
+    image: redis:7-alpine
+    container_name: stratosai-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+
+  ml-api:
+    build:
+      context: ./ml
+      dockerfile: Dockerfile
+    container_name: stratosai-ml
+    ports:
+      - "${ML_PORT:-5001}:5001"
+    environment:
+      - PORT=5001
+    depends_on:
+      - postgres
+      - mongo
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stratosai-backend
+    ports:
+      - "${BACKEND_PORT:-8080}:3001" # Host port 8080 mapping to 3001 internally
+    environment:
+      - DATABASE_URL=postgresql://stratos:password@postgres:5432/stratosai?schema=public
+      - MONGODB_URI=mongodb://mongo:27017/stratosai
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ML_API_URL=http://ml-api:5001
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_started
+      redis:
+        condition: service_started
+      ml-api:
+        condition: service_started
+
+volumes:
+  pgdata:
+  mongodata:
+  redisdata:
