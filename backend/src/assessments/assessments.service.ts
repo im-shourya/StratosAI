@@ -1,53 +1,132 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { Assessment } from './schemas/assessment.schema';
+import { Model } from 'mongoose';
+import { PrismaService } from '../prisma/prisma.service';
+import { Conversation } from '../conversations/schemas/conversation.schema';
+import { StartAssessmentDto } from './dto/start-assessment.dto';
+import { v4 as uuidv4 } from 'uuid';
+import { MlIntegrationService } from '../ml-integration/ml-integration.service';
+import { LlmService } from '../chat/llm.service';
 
 @Injectable()
 export class AssessmentsService {
   constructor(
-    @InjectModel(Assessment.name) private assessmentModel: Model<Assessment>
+    private readonly prisma: PrismaService,
+    @InjectModel(Conversation.name) private conversationModel: Model<Conversation>,
+    private readonly mlIntegration: MlIntegrationService,
+    private readonly llmService: LlmService
   ) {}
 
-  async startAssessment(data: { user_id: string; industry?: string; company_name?: string }) {
-    // 1. Initialize extracted data from what we know
+  async startAssessment(data: StartAssessmentDto) {
+    const sessionId = uuidv4();
+    
+    // 1. Create Assessment in PostgreSQL (Prisma)
+    const assessment = await this.prisma.assessment.create({
+      data: {
+        user_id: data.user_id,
+        session_id: sessionId,
+        company_name: data.company_name || 'Unknown',
+        industry: data.industry || 'Unknown',
+        company_size: 'Unknown',
+        ai_budget: 0,
+        ai_maturity: 1,
+        status: 'IN_PROGRESS'
+      }
+    });
+
     const initialExtractedData: any = {};
     if (data.industry) initialExtractedData.industry = data.industry;
     if (data.company_name) initialExtractedData.company_name = data.company_name;
 
-    // 2. Formulate the LLM prompt context and the first greeting
-    // In a full implementation, you might call Claude API here to generate the greeting dynamically.
-    // For now, we seed the conversation with a deterministic but highly professional greeting.
     const companyStr = data.company_name ? ` for ${data.company_name}` : '';
     const industryStr = data.industry ? ` in the ${data.industry} sector` : '';
     
     const initialMessage = {
       role: 'assistant',
-      content: `Welcome to the StratosAI Corporate Strategy Advisor! To help tailor a predictive AI roadmap and ROI model${companyStr}${industryStr}, I need to understand your primary objectives. What specific business problem or workflow are you hoping to optimize using AI (e.g., Customer Support, Supply Chain, Data Analytics)?`,
+      content: `Welcome to the StratosAI Corporate Strategy Advisor! To help tailor a predictive AI roadmap and ROI model${companyStr}${industryStr}, I need to understand your primary objectives. What specific business problem or workflow are you hoping to optimize using AI?`,
       timestamp: new Date()
     };
 
-    // 3. Create the Assessment document in MongoDB
-    const assessment = await this.assessmentModel.create({
-      user_id: new Types.ObjectId(data.user_id),
-      status: 'IN_PROGRESS',
+    // 2. Create Conversation in MongoDB (Mongoose)
+    const conversation = await this.conversationModel.create({
+      assessment_id: assessment.id,
+      session_id: sessionId,
       extracted_data: initialExtractedData,
-      chat_history: [
+      messages: [
         {
           role: 'system',
-          content: 'You are StratosAI, an elite Corporate AI Strategy Advisor. Your goal is to interview the user to extract their AI budget, timeline, company size, and specific use cases. Ask ONE concise question at a time. Once you have enough data, output a JSON structure summarizing the extracted data.',
+          content: 'You are StratosAI, an elite Corporate AI Strategy Advisor. Interview the user to extract their AI budget, timeline, company size, and specific use cases. Ask ONE concise question at a time.',
           timestamp: new Date()
         },
         initialMessage
-      ],
-      ml_results: {}
+      ]
     });
 
-    // 4. Return the session to the client
     return {
-      assessment_id: assessment._id.toString(),
+      assessment_id: assessment.id,
       status: assessment.status,
       message: initialMessage
     };
+  }
+
+  async getAssessment(assessmentId: string) {
+    const assessment = await this.prisma.assessment.findUnique({ where: { id: assessmentId } });
+    if (!assessment) throw new NotFoundException('Assessment not found');
+
+    const conversation = await this.conversationModel.findOne({ assessment_id: assessmentId });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+
+    return {
+      ...assessment,
+      chat_history: conversation.messages,
+      extracted_data: conversation.extracted_data,
+      phase: conversation.phase
+    };
+  }
+
+  async addMessage(assessmentId: string, message: { role: string; content: string; timestamp: Date }) {
+    const conversation = await this.conversationModel.findOne({ assessment_id: assessmentId });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+
+    conversation.messages.push(message);
+    await conversation.save();
+    return message;
+  }
+
+  async analyzeAssessment(assessmentId: string) {
+    const assessment = await this.getAssessment(assessmentId);
+
+    // Call ML Integration
+    const features = {
+      industry: assessment.industry,
+      budget: assessment.ai_budget,
+      maturity: assessment.ai_maturity,
+      ...assessment.extracted_data
+    };
+    
+    const mlResults = await this.mlIntegration.predictFull(features);
+
+    // Save ML results to predictions table
+    await this.prisma.prediction.create({
+      data: {
+        assessment_id: assessment.id,
+        roi_12m: mlResults.roi?.roi_12m || 0,
+        roi_36m: mlResults.roi?.roi_36m || 0,
+        success_prob: mlResults.success_probability || 0,
+        maturity_score: mlResults.maturity?.maturity_tier || 1,
+        risk_technical: mlResults.risk_scores?.technical || 0,
+        risk_financial: mlResults.risk_scores?.financial || 0,
+        risk_talent: mlResults.risk_scores?.talent || 0,
+        risk_regulatory: mlResults.risk_scores?.regulatory || 0,
+        model_version: '1.0.0'
+      }
+    });
+
+    await this.prisma.assessment.update({
+      where: { id: assessment.id },
+      data: { status: 'COMPLETED' }
+    });
+
+    return mlResults;
   }
 }
