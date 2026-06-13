@@ -1,24 +1,33 @@
-# Use Node 20 as base image
-FROM node:20-alpine
+# Use Node 22 (required by @prisma/streams-local)
+FROM node:22-alpine
 
 # Set working directory
 WORKDIR /app
 
-# Copy everything from the root monorepo
-COPY . .
+# Copy root package files first for caching
+COPY package.json package-lock.json ./
 
-# Install dependencies (this will install workspaces: backend, frontend, shared-types)
+# Copy ALL workspace package.json files (npm ci needs them all)
+COPY backend/package.json backend/
+COPY frontend/package.json frontend/
+COPY packages/shared-types/package.json packages/shared-types/
+
+# Install dependencies (workspace-aware)
 RUN npm ci
 
-# Generate Prisma client inside backend
+# Copy only backend and shared-types source (skip frontend source)
+COPY backend/ backend/
+COPY packages/ packages/
+
+# Generate Prisma client
 RUN cd backend && npx prisma generate
 
 # Build the NestJS application
 RUN cd backend && npm run build
 
-# Expose port (Railway dynamically sets PORT env var)
-EXPOSE 3001
+# Expose port (Railway sets PORT env var)
+EXPOSE 8080
 
-# Command to run the application (start from within backend directory)
+# Run directly with node (avoids npm workspace resolution issues)
 WORKDIR /app/backend
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main.js"]
