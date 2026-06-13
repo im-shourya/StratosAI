@@ -4,6 +4,7 @@ node_modules/
 # Python/ML environments and large files
 ml/venv/
 ml/data/
+docs/*
 __pycache__/
 *.pkl
 *.pt
