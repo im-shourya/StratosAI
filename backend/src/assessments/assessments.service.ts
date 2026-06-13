@@ -7,8 +7,6 @@ import { StartAssessmentDto } from './dto/start-assessment.dto';
 import { v4 as uuidv4 } from 'uuid';
 import { MlIntegrationService } from '../ml-integration/ml-integration.service';
 import { LlmService } from '../chat/llm.service';
-import { InjectQueue } from '@nestjs/bullmq';
-import { Queue } from 'bullmq';
 
 @Injectable()
 export class AssessmentsService {
@@ -18,8 +16,7 @@ export class AssessmentsService {
     private readonly prisma: PrismaService,
     @InjectModel(Conversation.name) private conversationModel: Model<Conversation>,
     private readonly mlIntegration: MlIntegrationService,
-    private readonly llmService: LlmService,
-    @InjectQueue('analysisQueue') private analysisQueue: Queue
+    private readonly llmService: LlmService
   ) {}
 
   async startAssessment(data: StartAssessmentDto) {
@@ -99,8 +96,10 @@ export class AssessmentsService {
   }
 
   async analyzeAssessment(assessmentId: string, userId: string) {
-    const job = await this.analysisQueue.add('analyze', { assessmentId, userId });
-    return { jobId: job.id, status: 'QUEUED' };
+    // Run analysis synchronously/directly since BullMQ/Redis was removed
+    this.logger.log(`Starting analysis for assessment ${assessmentId} (User: ${userId})`);
+    const results = await this.executeAnalysis(assessmentId, userId);
+    return { status: 'COMPLETED', results };
   }
 
   async executeAnalysis(assessmentId: string, userId: string) {
