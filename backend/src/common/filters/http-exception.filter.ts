@@ -11,13 +11,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
     
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
+    let message: any = 'Internal server error';
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
-      message = exception.getResponse() as string | any;
-      if (typeof message === 'object' && message.message) {
-        message = message.message;
+      const responseBody = exception.getResponse();
+      if (typeof responseBody === 'object' && responseBody !== null && 'message' in responseBody) {
+        message = (responseBody as any).message;
+      } else {
+        message = responseBody;
       }
     } else if (exception.code === 'P2002') {
       // Prisma unique constraint violation
