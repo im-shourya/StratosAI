@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+dist
+**/dist
+.next
+**/.next
+.git
+.env
+**/.env
+*.log
+**/*.log
+.npm
+.cache
