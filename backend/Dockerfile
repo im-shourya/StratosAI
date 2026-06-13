@@ -4,24 +4,21 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
-COPY prisma ./prisma/
-
-# Install dependencies
-RUN npm ci
-
-# Generate Prisma client
-RUN npx prisma generate
-
-# Copy the rest of the application
+# Copy everything from the root monorepo
 COPY . .
 
+# Install dependencies (this will install workspaces: backend, frontend, shared-types)
+RUN npm ci
+
+# Generate Prisma client inside backend
+RUN cd backend && npx prisma generate
+
 # Build the NestJS application
-RUN npm run build
+RUN cd backend && npm run build
 
 # Expose port (Railway dynamically sets PORT env var)
 EXPOSE 3001
 
-# Command to run the application
+# Command to run the application (start from within backend directory)
+WORKDIR /app/backend
 CMD ["npm", "run", "start:prod"]
