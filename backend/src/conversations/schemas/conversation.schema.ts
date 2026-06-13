@@ -1,26 +1,33 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document } from 'mongoose';
+
+export class ChatMessage {
+  @Prop({ required: true })
+  role: string;
+
+  @Prop({ required: true })
+  content: string;
+
+  @Prop({ default: Date.now })
+  timestamp: Date;
+}
 
 @Schema({ timestamps: true })
 export class Conversation extends Document {
   @Prop({ required: true })
+  assessment_id: string; // Links to PostgreSQL Assessment.id
+
+  @Prop({ required: true })
   session_id: string;
 
-  @Prop({
-    type: [{
-      role: { type: String, enum: ['user', 'assistant'] },
-      content: String,
-      timestamp: { type: Date, default: Date.now },
-    }],
-    default: [],
-  })
-  messages: Array<{ role: string; content: string; timestamp: Date }>;
+  @Prop({ type: Object, default: {} })
+  extracted_data: Record<string, any>;
 
-  @Prop({ type: MongooseSchema.Types.Mixed })
-  extracted_data: any;
+  @Prop({ type: [ChatMessage], default: [] })
+  messages: ChatMessage[];
 
-  @Prop({ required: true, min: 1, max: 5 })
-  phase: number;
+  @Prop({ default: 'PHASE_1' })
+  phase: string;
 
   @Prop({ default: false })
   complete: boolean;

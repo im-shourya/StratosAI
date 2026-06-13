@@ -1,14 +1,15 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AssessmentsController } from './assessments.controller';
 import { AssessmentsService } from './assessments.service';
-import { Assessment, AssessmentSchema } from './schemas/assessment.schema';
+import { PrismaModule } from '../prisma/prisma.module';
+import { ConversationsModule } from '../conversations/conversations.module';
+import { MlIntegrationModule } from '../ml-integration/ml-integration.module';
+import { ChatModule } from '../chat/chat.module';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Assessment.name, schema: AssessmentSchema }])
-  ],
+  imports: [PrismaModule, ConversationsModule, MlIntegrationModule, ChatModule],
   controllers: [AssessmentsController],
-  providers: [AssessmentsService]
+  providers: [AssessmentsService],
+  exports: [AssessmentsService]
 })
 export class AssessmentsModule {}
