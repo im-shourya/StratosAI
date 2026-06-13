@@ -1,25 +1,25 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Schema as MongooseSchema } from 'mongoose';
+import { Document } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Report extends Document {
   @Prop({ required: true })
-  assessment_id: string;
+  assessment_id: string; // Links to PG Assessment.id
 
-  @Prop()
+  @Prop({ required: true })
   executive_summary: string;
 
-  @Prop([String])
-  recommendations: string[];
+  @Prop({ type: [Object], default: [] })
+  recommendations: Array<any>;
 
-  @Prop({ type: MongooseSchema.Types.Mixed })
-  roadmap: any;
+  @Prop({ type: Object, default: {} })
+  roadmap: Record<string, any>;
 
-  @Prop([String])
+  @Prop({ type: [String], default: [] })
   risk_mitigations: string[];
 
-  @Prop({ type: MongooseSchema.Types.Mixed })
-  budget_plan: any;
+  @Prop({ type: Object, default: {} })
+  budget_plan: Record<string, any>;
 
   @Prop()
   llm_model: string;
