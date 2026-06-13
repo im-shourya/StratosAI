@@ -12,9 +12,10 @@ export class AnalysisProcessor extends WorkerHost {
   }
 
   async process(job: Job<any, any, string>): Promise<any> {
-    this.logger.log(`Processing analysis job ${job.id} for assessment ${job.data.assessmentId}`);
+    const { assessmentId, userId } = job.data;
+    this.logger.log(`Processing analysis job ${job.id} for assessment ${assessmentId} (User: ${userId})`);
     try {
-      const result = await this.assessmentsService.executeAnalysis(job.data.assessmentId);
+      const result = await this.assessmentsService.executeAnalysis(assessmentId, userId);
       this.logger.log(`Successfully processed job ${job.id}`);
       return result;
     } catch (error: any) {

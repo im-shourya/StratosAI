@@ -2,61 +2,60 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16
-    container_name: stratosai-postgres
+    image: postgres:15-alpine
+    container_name: stratos_postgres
     environment:
-      POSTGRES_USER: stratos
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: stratosai
+      POSTGRES_USER: ${POSTGRES_USER:-stratos_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-StratosSecure2026}
+      POSTGRES_DB: ${POSTGRES_DB:-stratosai_core}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U stratos"]
+      test: ["CMD-SHELL", "pg_isready -U stratos_admin -d stratosai_core"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  mongo:
-    image: mongo:6
-    container_name: stratosai-mongo
+  mongodb:
+    image: mongo:6.0
+    container_name: stratos_mongo
     ports:
       - "${MONGO_PORT:-27017}:27017"
     volumes:
-      - mongodata:/data/db
+      - mongo_data:/data/db
 
   redis:
-    image: redis:7-alpine
-    container_name: stratosai-redis
+    image: redis:7.0-alpine
+    container_name: stratos_redis
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - redisdata:/data
+      - redis_data:/data
 
   ml-api:
     build:
       context: ./ml
       dockerfile: Dockerfile
-    container_name: stratosai-ml
+    container_name: stratos_ml_api
     ports:
-      - "${ML_PORT:-5001}:5001"
+      - "${ML_API_PORT:-5001}:5001"
     environment:
-      - PORT=5001
-    depends_on:
-      - postgres
-      - mongo
+      - MODEL_PATH=/app/models
+    volumes:
+      - ./ml:/app
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: stratosai-backend
+    container_name: stratos_backend_api
     ports:
-      - "${BACKEND_PORT:-8080}:3001" # Host port 8080 mapping to 3001 internally
+      - "${BACKEND_PORT:-8080}:3001" # NestJS typically runs on 3001 in our setup
     environment:
-      - DATABASE_URL=postgresql://stratos:password@postgres:5432/stratosai?schema=public
-      - MONGODB_URI=mongodb://mongo:27017/stratosai
+      - DATABASE_URL=postgresql://stratos_admin:StratosSecure2026@postgres:5432/stratosai_core?schema=public
+      - MONGODB_URI=mongodb://mongodb:27017/stratosai
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - ML_API_URL=http://ml-api:5001
@@ -64,14 +63,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mongo:
-        condition: service_started
       redis:
         condition: service_started
-      ml-api:
+      mongodb:
         condition: service_started
 
 volumes:
-  pgdata:
-  mongodata:
-  redisdata:
+  postgres_data:
+  mongo_data:
+  redis_data:
