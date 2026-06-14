@@ -1,7 +1,9 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { BenchmarksService } from './benchmarks.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('benchmarks')
+@UseGuards(JwtAuthGuard)
 export class BenchmarksController {
   constructor(private readonly benchmarksService: BenchmarksService) {}
 
