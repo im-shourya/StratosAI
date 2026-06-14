@@ -8,13 +8,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          "bg-[var(--color-primary)] text-white rounded-xl hover:brightness-110 active:scale-[0.98] shadow-md hover:shadow-lg",
+          "bg-[var(--color-primary)] text-white rounded-[10px] hover:brightness-110 active:scale-[0.98] shadow-md hover:shadow-lg",
         glass:
-          "glass rounded-xl hover:bg-[var(--glass-bg-elevated)] text-[var(--color-text-primary)]",
+          "glass rounded-[10px] hover:bg-[var(--glass-bg-elevated)] text-[var(--color-text-primary)]",
         ghost:
-          "text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.04)] rounded-xl",
+          "text-[var(--color-text-primary)] hover:bg-[rgba(0,0,0,0.04)] rounded-[10px]",
         danger:
-          "bg-[var(--color-danger)] text-white rounded-xl hover:brightness-110 active:scale-[0.98]",
+          "bg-[var(--color-danger)] text-white rounded-[10px] hover:brightness-110 active:scale-[0.98]",
       },
       size: {
         sm: "px-3 py-1.5 text-sm gap-1.5",

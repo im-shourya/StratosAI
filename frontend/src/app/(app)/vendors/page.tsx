@@ -28,7 +28,7 @@ export default function VendorsPage() {
       <GlassCard className="flex flex-col sm:flex-row gap-3">
         <div className="flex-1 relative">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--color-text-tertiary)" }} />
-          <input type="text" placeholder="Search vendors by name or capability..." className="glass-input pl-9" />
+          <input type="text" placeholder="Search vendors by name or capability..." className="glass-input pl-10 w-full" />
         </div>
       </GlassCard>
 

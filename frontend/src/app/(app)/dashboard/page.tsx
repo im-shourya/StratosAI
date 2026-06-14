@@ -3,7 +3,7 @@
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { RiskRadar } from "@/components/dashboard/RiskRadar";
 import { BudgetDonut } from "@/components/dashboard/BudgetDonut";
-import { MaturityBar } from "@/components/dashboard/MaturityBar";
+import { PipelineChart } from "@/components/dashboard/PipelineChart";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Calendar, Link2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -37,22 +37,15 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Main Grid */}
+      {/* Top Grid: Pipeline and ROI */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Top Left: Main Chart (Span 2) */}
-        <div className="lg:col-span-2 flex flex-col h-full min-h-[400px]">
-          <GlassCard className="flex-1 flex flex-col h-full relative overflow-hidden">
-            <div className="flex items-center justify-between mb-8">
-              <h3 className="text-xl font-semibold" style={{ color: "var(--color-navy)" }}>AI Adoption & Maturity</h3>
-            </div>
-            <div className="flex-1 -mx-2 -mb-2">
-              <MaturityBar currentTier={3} peerAvg={2.4} />
-            </div>
-          </GlassCard>
+        {/* Pipeline Chart */}
+        <div className="lg:col-span-2 flex flex-col h-full">
+          <PipelineChart />
         </div>
 
-        {/* Top Right: Gross Volume KPI */}
+        {/* Total Projected ROI */}
         <div className="lg:col-span-1 flex flex-col">
           <KpiCard
             label="Total Projected ROI"
@@ -65,7 +58,7 @@ export default function DashboardPage() {
                   <span style={{ color: "var(--color-text-secondary)" }}>Automation</span>
                   <span style={{ color: "var(--color-navy)" }}>$26,800</span>
                 </div>
-                <div className="h-2 w-full bg-[rgba(29,158,117,0.15)] rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-[var(--color-success)] w-[65%] rounded-full" />
                 </div>
               </div>
@@ -74,7 +67,7 @@ export default function DashboardPage() {
                   <span style={{ color: "var(--color-text-secondary)" }}>Machine Learning</span>
                   <span style={{ color: "var(--color-navy)" }}>$10,400</span>
                 </div>
-                <div className="h-2 w-full bg-[rgba(41,128,185,0.15)] rounded-full overflow-hidden">
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
                   <div className="h-full bg-[var(--color-primary)] w-[25%] rounded-full" />
                 </div>
               </div>
@@ -84,10 +77,10 @@ export default function DashboardPage() {
 
       </div>
 
-      {/* Bottom Grid */}
+      {/* Bottom Grid: Remaining Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
-        {/* Bottom Left: Risk Radar */}
+        {/* Risk Radar */}
         <div className="lg:col-span-1">
           <GlassCard className="h-full flex flex-col">
              <div className="flex items-center justify-between mb-4">
@@ -99,7 +92,7 @@ export default function DashboardPage() {
           </GlassCard>
         </div>
 
-        {/* Bottom Center: Stacked KPIs */}
+        {/* Stacked KPIs */}
         <div className="lg:col-span-1 flex flex-col gap-6">
           <KpiCard
             label="Active Vendors"
@@ -121,7 +114,7 @@ export default function DashboardPage() {
           </KpiCard>
         </div>
 
-        {/* Bottom Right: Gradient Insights Card */}
+        {/* Gradient Insights Card */}
         <div className="lg:col-span-1">
           <div className="h-full rounded-3xl p-6 flex flex-col justify-between text-white relative overflow-hidden" 
                style={{ background: "linear-gradient(135deg, #1A4685, #2980B9, #5DADE2)", boxShadow: "var(--shadow-glass)" }}>
