@@ -104,7 +104,7 @@ The entire platform can be spun up using our orchestrated Docker environment:
 
 ```bash
 # 1. Clone the repository (adjust URL as needed)
-git clone https://github.com/your-org/stratosai.git
+git clone https://github.com/im-shourya/StratosAI.git
 cd stratosai
 
 # 2. Configure environment variables (setup backend/.env)
