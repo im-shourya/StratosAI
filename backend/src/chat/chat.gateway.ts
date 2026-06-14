@@ -9,7 +9,7 @@ import {
 import { Server, Socket } from 'socket.io';
 import { LlmService } from './llm.service';
 import { AssessmentsService } from '../assessments/assessments.service';
-import { Logger } from '@nestjs/common';
+import { Logger, Inject, forwardRef } from '@nestjs/common';
 
 @WebSocketGateway({ cors: { origin: '*' } })
 export class ChatGateway implements OnGatewayConnection {
@@ -20,6 +20,7 @@ export class ChatGateway implements OnGatewayConnection {
 
   constructor(
     private readonly llmService: LlmService,
+    @Inject(forwardRef(() => AssessmentsService))
     private readonly assessmentsService: AssessmentsService
   ) {}
 
