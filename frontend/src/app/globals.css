@@ -1,26 +1,324 @@
 @import "tailwindcss";
 
+/* ================================================================
+   STRATOSAI — LIQUID GLASS DESIGN SYSTEM
+   Beautiful light theme with frosted glass surfaces
+   ================================================================ */
+
+/* ── Base Theme: Corporate Glass (Light, Beautiful) ─────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Color Palette */
+  --color-navy:       #111827; /* Very dark gray */
+  --color-primary:    #111827; /* Black/Dark Gray for primary buttons */
+  --color-primary-light: #374151;
+  --color-success:    #10B981;
+  --color-warning:    #F59E0B;
+  --color-danger:     #EF4444;
+  --color-accent:     #4B5563;
+  --color-accent-light: #9CA3AF;
+
+  /* Text Colors */
+  --color-text-primary:   #1A1A2E;
+  --color-text-secondary: #5A6178;
+  --color-text-tertiary:  #9CA3B4;
+
+  /* Backgrounds */
+  --color-bg-base:    #F9FAFB;
+  --color-bg-page:    #F3F4F6;
+
+  /* Glass Surface Tokens */
+  --glass-bg:            rgba(255, 255, 255, 0.85);
+  --glass-bg-elevated:   rgba(255, 255, 255, 0.95);
+  --glass-border:        rgba(255, 255, 255, 1);
+  --glass-border-subtle: rgba(229, 231, 235, 0.5);
+  --glass-highlight:     rgba(255, 255, 255, 0.90);
+  --glass-blur:          24px;
+  --glass-blur-heavy:    40px;
+  --glass-saturate:      120%;
+
+  /* Module-Tinted Glass */
+  --glass-tint-roi:        rgba(41, 128, 185, 0.08);
+  --glass-tint-risk:       rgba(192, 57, 43, 0.08);
+  --glass-tint-budget:     rgba(29, 158, 117, 0.08);
+  --glass-tint-maturity:   rgba(108, 52, 131, 0.08);
+
+  /* Gradient Mesh Background Colors */
+  --mesh-color-1: #DBEAFE;
+  --mesh-color-2: #E8DAFF;
+  --mesh-color-3: #D5F5E3;
+  --mesh-color-4: #FCE4EC;
+
+  /* Solid fallback */
+  --surface-solid: #FFFFFF;
+
+  /* Shadows */
+  --shadow-glass:    0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --shadow-elevated: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+  --shadow-float:    0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+
+  /* Border Radius */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  --radius-full: 9999px;
+
+  /* Typography */
+  --text-display: 2.5rem;
+  --text-h1: 2rem;
+  --text-h2: 1.5rem;
+  --text-h3: 1.125rem;
+  --text-body: 0.9375rem;
+  --text-body-sm: 0.8125rem;
+  --text-mono: 0.875rem;
 }
 
+/* ── Tailwind v4 Theme Extension ────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--color-bg-page);
+  --color-foreground: var(--color-text-primary);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono-code);
+  --font-display: var(--font-heading);
 }
 
-@media (prefers-color-scheme: dark) {
+/* ── Accessibility: Reduced Transparency ─────────────────── */
+@media (prefers-reduced-transparency: reduce) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --glass-bg: var(--surface-solid);
+    --glass-bg-elevated: var(--surface-solid);
+    --glass-blur: 0px;
+    --glass-blur-heavy: 0px;
   }
 }
 
+/* ================================================================
+   BASE STYLES
+   ================================================================ */
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg-page);
+  color: var(--color-text-primary);
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================================================================
+   GLASS COMPONENT CLASSES
+   ================================================================ */
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-glass);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Specular highlight — top edge light catch */
+.glass::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 10%,
+    var(--glass-highlight) 50%,
+    transparent 90%
+  );
+  pointer-events: none;
+}
+
+/* Elevated glass — modals, nav, dropdowns */
+.glass--elevated {
+  background: var(--glass-bg-elevated);
+  backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy)) saturate(var(--glass-saturate));
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Interactive glass — cards that respond to hover */
+.glass--interactive {
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+.glass--interactive:hover {
+  background: var(--glass-bg-elevated);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+}
+
+/* Module-tinted glass */
+.glass--roi      { background: color-mix(in srgb, var(--glass-bg) 90%, #2980B9 10%); }
+.glass--risk     { background: color-mix(in srgb, var(--glass-bg) 90%, #C0392B 10%); }
+.glass--budget   { background: color-mix(in srgb, var(--glass-bg) 90%, #1D9E75 10%); }
+.glass--maturity { background: color-mix(in srgb, var(--glass-bg) 90%, #6C3483 10%); }
+
+/* ================================================================
+   MESH BACKGROUND
+   ================================================================ */
+
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--color-bg-page);
+}
+
+.mesh-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.35;
+  animation: mesh-float 28s ease-in-out infinite;
+}
+
+.mesh-blob--1 {
+  width: 55vw; height: 55vw;
+  top: -15%; left: -10%;
+  background: var(--mesh-color-1);
+}
+.mesh-blob--2 {
+  width: 45vw; height: 45vw;
+  top: 25%; right: -12%;
+  background: var(--mesh-color-2);
+  animation-delay: -9s;
+}
+.mesh-blob--3 {
+  width: 40vw; height: 40vw;
+  bottom: -10%; left: 25%;
+  background: var(--mesh-color-3);
+  animation-delay: -18s;
+}
+.mesh-blob--4 {
+  width: 35vw; height: 35vw;
+  top: 50%; left: 50%;
+  background: var(--mesh-color-4);
+  animation-delay: -6s;
+}
+
+@keyframes mesh-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25%      { transform: translate(4%, 8%) scale(1.05); }
+  50%      { transform: translate(-3%, 4%) scale(0.98); }
+  75%      { transform: translate(5%, -6%) scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mesh-blob { animation: none; }
+}
+
+/* ================================================================
+   FORM ELEMENTS — GLASS STYLE
+   ================================================================ */
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--glass-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: var(--text-body);
+  color: var(--color-text-primary);
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+  outline: none;
+  width: 100%;
+}
+.glass-input:focus {
+  border-color: var(--color-primary);
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.12);
+}
+.glass-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Segmented control */
+.segmented {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.40);
+  border: 1px solid var(--glass-border-subtle);
+  gap: 2px;
+}
+.segmented__option {
+  padding: 6px 16px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-body-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  background: transparent;
+}
+.segmented__option--active {
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.25);
+}
+
+/* Glass chip — quick-reply buttons in chat */
+.glass-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.50);
+  border: 1px solid var(--glass-border-subtle);
+  font-size: var(--text-body-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.glass-chip:hover {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+}
+
+/* ================================================================
+   UTILITY CLASSES
+   ================================================================ */
+
+.text-display     { font-size: var(--text-display); font-family: var(--font-heading); }
+.text-h1          { font-size: var(--text-h1); font-family: var(--font-heading); }
+.text-h2          { font-size: var(--text-h2); font-family: var(--font-heading); }
+.text-h3          { font-size: var(--text-h3); font-family: var(--font-heading); }
+.text-body        { font-size: var(--text-body); }
+.text-body-sm     { font-size: var(--text-body-sm); }
+.text-mono        { font-size: var(--text-mono); font-family: var(--font-mono-code); }
+
+.text-primary     { color: var(--color-text-primary); }
+.text-secondary   { color: var(--color-text-secondary); }
+.text-tertiary    { color: var(--color-text-tertiary); }
+.text-accent      { color: var(--color-primary); }
+.text-success     { color: var(--color-success); }
+.text-warning     { color: var(--color-warning); }
+.text-danger      { color: var(--color-danger); }
+
+.font-display     { font-family: var(--font-heading); }
+.font-mono        { font-family: var(--font-mono-code); }
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(31, 56, 100, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(31, 56, 100, 0.25);
 }
