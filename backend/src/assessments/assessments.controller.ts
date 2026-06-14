@@ -1,14 +1,17 @@
-import { Controller, Post, Get, Body, Param } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
 import { AssessmentsService } from './assessments.service';
 import { StartAssessmentDto } from './dto/start-assessment.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
+
 
 @Controller('assessments') // global prefix is api
 export class AssessmentsController {
   constructor(private readonly assessmentsService: AssessmentsService) {}
 
   @Post('start')
-  async start(@Body() body: StartAssessmentDto) {
-    return this.assessmentsService.startAssessment(body);
+  async start(@Body() body: StartAssessmentDto, @CurrentUser() user: any) {
+    return this.assessmentsService.startAssessment({ ...body, user_id: user.userId });
   }
 
   @Post(':id/respond')
@@ -34,9 +37,7 @@ export class AssessmentsController {
   }
 
   @Post(':id/analyze')
-  async analyze(@Param('id') id: string) {
-    // In a real app, userId would be extracted from the JWT token via req.user
-    const dummyUserId = 'user_from_jwt_token'; 
-    return this.assessmentsService.analyzeAssessment(id, dummyUserId);
+  async analyze(@Param('id') id: string, @CurrentUser() user: any) {
+    return this.assessmentsService.analyzeAssessment(id, user.userId);
   }
 }
