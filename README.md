@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://via.placeholder.com/150x150/000000/FFFFFF?text=StratosAI" alt="StratosAI Logo" width="120" height="120" />
+  <img src="./frontend/public/logo.png" alt="StratosAI Logo" width="120" height="120" />
   
   # StratosAI
   
