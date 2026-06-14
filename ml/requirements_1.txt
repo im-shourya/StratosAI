@@ -1,0 +1,14 @@
+flask==3.0.3
+flask-cors==4.0.1
+xgboost==2.0.3
+scikit-learn==1.5.2
+imbalanced-learn==0.12.4
+scipy==1.13.1
+shap==0.45.0
+pandas==2.2.2
+numpy==1.26.4
+joblib==1.4.2
+requests==2.32.3
+google-generativeai==0.7.2
+anthropic==0.28.0
+python-dotenv==1.0.1
