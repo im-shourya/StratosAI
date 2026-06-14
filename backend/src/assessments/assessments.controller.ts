@@ -5,6 +5,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 
+@UseGuards(JwtAuthGuard)
 @Controller('assessments') // global prefix is api
 export class AssessmentsController {
   constructor(private readonly assessmentsService: AssessmentsService) {}
