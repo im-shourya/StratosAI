@@ -26,7 +26,7 @@ export class AssessmentsService {
     // 1. Create Assessment in PostgreSQL (Prisma)
     const assessment = await this.prisma.assessment.create({
       data: {
-        user_id: data.user_id,
+        user_id: data.user_id as string,
         session_id: sessionId,
         company_name: data.company_name || 'Unknown',
         industry: data.industry || 'Unknown',
