@@ -1,8 +1,8 @@
-import { IsString, IsOptional, IsUUID } from 'class-validator';
+iimport { IsString, IsOptional, IsUUID } from 'class-validator';
 
 export class StartAssessmentDto {
-  @IsUUID()
-  user_id!: string;
+  @IsOptional()
+  user_id?: string;
 
   @IsOptional()
   @IsString()
