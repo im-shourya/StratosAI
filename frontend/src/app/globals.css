@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
 /* ================================================================
    STRATOSAI — LIQUID GLASS DESIGN SYSTEM
    Beautiful light theme with frosted glass surfaces
