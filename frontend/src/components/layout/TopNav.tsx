@@ -40,8 +40,7 @@ export function TopNav() {
       style={{ borderRadius: "2rem" }}
     >
       {/* Logo */}
-      <Link href="/dashboard" className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-black shrink-0">
-        <Hexagon className="w-6 h-6 text-[#A855F7] fill-purple-100" />
+      <Link href="/dashboard" className="flex items-center font-display text-xl font-bold tracking-tight text-black shrink-0">
         StratosAI
       </Link>
 

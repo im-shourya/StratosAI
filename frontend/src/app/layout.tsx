@@ -29,6 +29,29 @@ export const metadata: Metadata = {
     "Automated AI strategy consulting for enterprises. Evaluate AI readiness, forecast ROI, assess risk, and build board-ready roadmaps.",
   icons: {
     icon: "/logo.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    title: "StratosAI - AI Strategy & Assessment Engine",
+    description: "Automated AI strategy consulting for enterprises. Evaluate AI readiness, forecast ROI, assess risk, and build board-ready roadmaps.",
+    url: "https://stratosai.com",
+    siteName: "StratosAI",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "StratosAI Logo",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "StratosAI - AI Strategy & Assessment Engine",
+    description: "Automated AI strategy consulting for enterprises.",
+    images: ["/logo.png"],
   },
 };
 
