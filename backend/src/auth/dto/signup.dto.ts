@@ -11,16 +11,4 @@ export class SignupDto {
   @IsOptional()
   @IsString()
   company_name?: string;
-
-  @IsOptional()
-  @IsString()
-  industry?: string;
-
-  @IsOptional()
-  @IsString()
-  valuation?: string;
-
-  @IsOptional()
-  @IsString()
-  country?: string;
 }

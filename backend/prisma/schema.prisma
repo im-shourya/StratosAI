@@ -7,68 +7,128 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(uuid()) @db.Uuid
-  email        String       @unique @db.VarChar
-  password     String       @db.VarChar
-  company_name String?      @db.VarChar
-  industry     String?      @db.VarChar
-  valuation    String?      @db.VarChar
-  country      String?      @db.VarChar
-  created_at   DateTime     @default(now()) @db.Timestamp(6)
-  assessments  Assessment[]
+  id            String       @id @default(uuid()) @db.Uuid
+  email         String       @unique @db.VarChar(255)
+  password_hash String       @db.VarChar
+  company_name  String       @db.VarChar(200)
+  plan_tier     String       @default("free") @db.VarChar // enum replacement
+  created_at    DateTime     @default(now()) @db.Timestamp(6)
+  updated_at    DateTime     @updatedAt @db.Timestamp(6)
+  
+  assessments   Assessment[]
+
+  @@map("users")
 }
 
 model Assessment {
-  id           String       @id @default(uuid()) @db.Uuid
-  user_id      String       @db.Uuid
-  user         User         @relation(fields: [user_id], references: [id])
-  session_id   String       @db.VarChar
-  company_name String       @db.VarChar
-  industry     String       @db.VarChar
-  company_size String       @db.VarChar
-  ai_budget    Decimal      @db.Decimal
-  ai_maturity  Int          @db.Integer
-  status       String       @db.VarChar
-  created_at   DateTime     @default(now()) @db.Timestamp(6)
-  predictions  Prediction[]
-  initiatives  Initiative[]
+  id                      String       @id @default(uuid()) @db.Uuid
+  session_id              String       @unique @db.VarChar
+  user_id                 String?      @db.Uuid
+  company_name            String?      @db.VarChar
+  industry                String?      @db.VarChar
+  company_size            String?      @db.VarChar
+  ai_budget               Decimal?     @db.Decimal
+  ai_maturity             Int?         @db.Integer
+  automation_rate         Decimal?     @db.Decimal
+  employee_training_hours Decimal?     @db.Decimal
+  num_ai_deployments      Int?         @db.Integer
+  status                  String       @default("in_progress") @db.VarChar
+  created_at              DateTime     @default(now()) @db.Timestamp(6)
+  
+  user                    User?        @relation(fields: [user_id], references: [id])
+  responses               AssessmentResponse[]
+  prediction              Prediction?
+  initiatives             Initiative[]
+
+  @@map("assessments")
+}
+
+model AssessmentResponse {
+  id             String     @id @default(uuid()) @db.Uuid
+  assessment_id  String     @db.Uuid
+  question_id    String     @db.VarChar
+  question_text  String     @db.Text
+  response_value String     @db.Text
+  response_type  String     @db.VarChar // single, multi, text, numeric
+  answered_at    DateTime   @default(now()) @db.Timestamp(6)
+  
+  assessment     Assessment @relation(fields: [assessment_id], references: [id], onDelete: Cascade)
+
+  @@map("assessment_responses")
 }
 
 model Prediction {
-  id              String     @id @default(uuid()) @db.Uuid
-  assessment_id   String     @db.Uuid
-  assessment      Assessment @relation(fields: [assessment_id], references: [id])
-  roi_12m         Decimal    @db.Decimal
-  roi_36m         Decimal    @db.Decimal
-  success_prob    Decimal    @db.Decimal
-  maturity_score  Int        @db.Integer
-  risk_technical  Decimal    @db.Decimal
-  risk_financial  Decimal    @db.Decimal
-  risk_talent     Decimal    @db.Decimal
-  risk_regulatory Decimal    @db.Decimal
-  model_version   String     @db.VarChar
+  id                       String     @id @default(uuid()) @db.Uuid
+  assessment_id            String     @unique @db.Uuid
+  
+  // Revenue Impact
+  annual_revenue_impact    Decimal?   @db.Decimal
+  quarterly_revenue_impact Decimal?   @db.Decimal
+  
+  // Productivity Gain
+  productivity_gain_pct    Decimal?   @db.Decimal
+  
+  // Derived metrics
+  roi_percentage           Decimal?   @db.Decimal
+  annual_net_benefit       Decimal?   @db.Decimal
+  payback_months           Decimal?   @db.Decimal
+  transformation_score     Decimal?   @db.Decimal
+  readiness_level          String?    @db.VarChar // HIGH, MEDIUM, LOW
+  risk_score               Decimal?   @db.Decimal
+  
+  // Scenario Simulator
+  scenario_baseline_roi    Decimal?   @db.Decimal
+  scenario_cautious_roi    Decimal?   @db.Decimal
+  scenario_aggressive_roi  Decimal?   @db.Decimal
+  board_recommendation     String?    @db.Text
+  
+  // Risky Radar scores
+  risk_technical           Decimal?   @db.Decimal
+  risk_financial           Decimal?   @db.Decimal
+  risk_talent              Decimal?   @db.Decimal
+  risk_regulatory          Decimal?   @db.Decimal
+  risk_market              Decimal?   @db.Decimal
+  
+  // Maturity Assessor
+  maturity_tier            Int?       @db.Integer
+  peer_percentile          Decimal?   @db.Decimal
+  
+  model_version            String     @default("1.0") @db.VarChar
+  predicted_at             DateTime   @default(now()) @db.Timestamp(6)
+  
+  assessment               Assessment @relation(fields: [assessment_id], references: [id])
+
+  @@map("predictions")
 }
 
 model Initiative {
   id               String     @id @default(uuid()) @db.Uuid
   assessment_id    String     @db.Uuid
-  assessment       Assessment @relation(fields: [assessment_id], references: [id])
   name             String     @db.VarChar
   use_case         String     @db.VarChar
   allocated_budget Decimal    @db.Decimal
+  allocation_pct   Decimal    @db.Decimal
   expected_roi     Decimal    @db.Decimal
   risk_score       Decimal    @db.Decimal
   priority         Int        @db.Integer
   timeline_months  Int        @db.Integer
+  
+  assessment       Assessment @relation(fields: [assessment_id], references: [id], onDelete: Cascade)
+
+  @@map("initiatives")
 }
 
 model Benchmark {
-  id              String  @id @default(uuid()) @db.Uuid
-  industry        String  @db.VarChar
-  use_case        String  @db.VarChar
-  company_size    String  @db.VarChar
-  avg_roi_pct     Decimal @db.Decimal
-  success_rate    Decimal @db.Decimal
-  avg_timeline_mo Int     @db.Integer
-  data_year       Int     @db.Integer
+  id              String   @id @default(uuid()) @db.Uuid
+  industry        String   @db.VarChar
+  use_case        String   @db.VarChar
+  company_size    String?  @db.VarChar
+  avg_roi_pct     Decimal  @db.Decimal
+  success_rate    Decimal  @db.Decimal
+  avg_timeline_mo Int      @db.Integer
+  avg_investment  Decimal? @db.Decimal
+  data_year       Int      @db.Integer
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+
+  @@map("benchmarks")
 }

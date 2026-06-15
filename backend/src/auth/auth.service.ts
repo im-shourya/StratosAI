@@ -23,11 +23,8 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         email: data.email,
-        password: hashedPassword,
-        company_name: data.company_name,
-        industry: data.industry,
-        valuation: data.valuation,
-        country: data.country,
+        password_hash: hashedPassword,
+        company_name: data.company_name || 'N/A',
       }
     });
 
@@ -48,7 +45,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isValid = await bcrypt.compare(data.password, user.password);
+    const isValid = await bcrypt.compare(data.password, user.password_hash);
     if (!isValid) {
       throw new UnauthorizedException('Invalid credentials');
     }

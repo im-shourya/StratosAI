@@ -1,8 +1,8 @@
 import { Controller, Post, Get, Body, Param, UseGuards } from '@nestjs/common';
 import { AssessmentsService } from './assessments.service';
 import { StartAssessmentDto } from './dto/start-assessment.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 
 @UseGuards(JwtAuthGuard)
