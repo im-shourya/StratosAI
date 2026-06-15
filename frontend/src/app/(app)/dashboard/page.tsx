@@ -53,22 +53,36 @@ export default function DashboardPage() {
             trend={{ direction: "up", value: "15%" }}
           >
             <div className="space-y-4">
+              {/* Automation */}
               <div className="space-y-1">
                 <div className="flex justify-between text-sm font-medium">
                   <span style={{ color: "var(--color-text-secondary)" }}>Automation</span>
                   <span style={{ color: "var(--color-navy)" }}>$26,800</span>
                 </div>
-                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[var(--color-success)] w-[65%] rounded-full" />
+                <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
+                  <div className="h-full w-[65%] rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]" style={{ background: "repeating-linear-gradient(45deg, #10B981, #10B981 2px, #34D399 2px, #34D399 6px)" }} />
                 </div>
               </div>
+              
+              {/* Machine Learning */}
               <div className="space-y-1">
                 <div className="flex justify-between text-sm font-medium">
                   <span style={{ color: "var(--color-text-secondary)" }}>Machine Learning</span>
                   <span style={{ color: "var(--color-navy)" }}>$10,400</span>
                 </div>
-                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-[var(--color-primary)] w-[25%] rounded-full" />
+                <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
+                  <div className="h-full w-[40%] rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]" style={{ background: "repeating-linear-gradient(45deg, #3B82F6, #3B82F6 2px, #60A5FA 2px, #60A5FA 6px)" }} />
+                </div>
+              </div>
+              
+              {/* Predictive Analytics */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-sm font-medium">
+                  <span style={{ color: "var(--color-text-secondary)" }}>Predictive Analytics</span>
+                  <span style={{ color: "var(--color-navy)" }}>$4,340</span>
+                </div>
+                <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
+                  <div className="h-full w-[25%] rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]" style={{ background: "repeating-linear-gradient(45deg, #EC4899, #EC4899 2px, #F472B6 2px, #F472B6 6px)" }} />
                 </div>
               </div>
             </div>

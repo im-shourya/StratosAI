@@ -1,13 +1,11 @@
 "use client";
 
-import { GlassCard } from "@/components/ui/GlassCard";
-
 const RISKS = [
-  { label: "Technical", score: 40, color: "#2980B9" },
-  { label: "Financial", score: 30, color: "#1D9E75" },
-  { label: "Talent", score: 75, color: "#C0392B" },
-  { label: "Regulatory", score: 20, color: "#6C3483" },
-  { label: "Market", score: 15, color: "#D4AC0D" },
+  { label: "Technical", score: 40, stripeStr: "repeating-linear-gradient(45deg, #3B82F6, #3B82F6 2px, #60A5FA 2px, #60A5FA 6px)" },
+  { label: "Financial", score: 30, stripeStr: "repeating-linear-gradient(45deg, #10B981, #10B981 2px, #34D399 2px, #34D399 6px)" },
+  { label: "Talent", score: 75, stripeStr: "repeating-linear-gradient(45deg, #EF4444, #EF4444 2px, #F87171 2px, #F87171 6px)" },
+  { label: "Regulatory", score: 20, stripeStr: "repeating-linear-gradient(45deg, #8B5CF6, #8B5CF6 2px, #A78BFA 2px, #A78BFA 6px)" },
+  { label: "Market", score: 15, stripeStr: "repeating-linear-gradient(45deg, #F59E0B, #F59E0B 2px, #FBBF24 2px, #FBBF24 6px)" },
 ];
 
 function getRiskLevel(score: number) {
@@ -18,38 +16,32 @@ function getRiskLevel(score: number) {
 
 export function RiskRadar() {
   return (
-    <GlassCard tint="risk">
-      <h3 className="text-h3 font-display font-semibold mb-4" style={{ color: "var(--color-navy)" }}>
-        Risk Radar
-      </h3>
-      <div className="flex flex-col gap-3">
-        {RISKS.map((risk) => {
-          const level = getRiskLevel(risk.score);
-          return (
-            <div key={risk.label} className="flex items-center gap-3">
-              <span className="text-body-sm w-20 shrink-0" style={{ color: "var(--color-text-secondary)" }}>
-                {risk.label}
-              </span>
-              <div className="flex-1 h-2.5 rounded-full bg-[rgba(0,0,0,0.06)] overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{
-                    width: `${risk.score}%`,
-                    background: risk.color,
-                    opacity: 0.75,
-                  }}
-                />
-              </div>
-              <span
-                className="text-xs font-semibold w-10 text-right"
-                style={{ color: level.color }}
-              >
-                {level.text}
-              </span>
+    <div className="flex flex-col gap-4 p-4">
+      {RISKS.map((risk) => {
+        const level = getRiskLevel(risk.score);
+        return (
+          <div key={risk.label} className="flex items-center gap-3">
+            <span className="text-body-sm w-20 shrink-0 font-medium" style={{ color: "var(--color-text-secondary)" }}>
+              {risk.label}
+            </span>
+            <div className="flex-1 h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
+              <div
+                className="h-full rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)] transition-all duration-700"
+                style={{
+                  width: `${risk.score}%`,
+                  background: risk.stripeStr,
+                }}
+              />
             </div>
-          );
-        })}
-      </div>
-    </GlassCard>
+            <span
+              className="text-xs font-bold w-10 text-right uppercase"
+              style={{ color: level.color }}
+            >
+              {level.text}
+            </span>
+          </div>
+        );
+      })}
+    </div>
   );
 }

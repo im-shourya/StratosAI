@@ -71,10 +71,15 @@ export default function AssessmentsPage() {
                     <span style={{ color: "var(--color-text-secondary)" }}>Progress</span>
                     <span className="font-mono" style={{ color: "var(--color-primary)" }}>{a.progress}%</span>
                   </div>
-                  <div className="h-1.5 w-full bg-[rgba(0,0,0,0.06)] rounded-full overflow-hidden">
+                  <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
                     <div 
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${a.progress}%`, background: "var(--color-primary)" }}
+                      className="h-full rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)] transition-all duration-700"
+                      style={{ 
+                        width: `${a.progress}%`, 
+                        background: a.status === "error" 
+                          ? "repeating-linear-gradient(45deg, #EF4444, #EF4444 2px, #F87171 2px, #F87171 6px)" 
+                          : "repeating-linear-gradient(45deg, #3B82F6, #3B82F6 2px, #60A5FA 2px, #60A5FA 6px)" 
+                      }}
                     />
                   </div>
                   <div className="pt-2">
