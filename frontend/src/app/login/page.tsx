@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MeshBackground } from "@/components/MeshBackground";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassInput } from "@/components/ui/GlassInput";
 import { Button } from "@/components/ui/Button";
@@ -35,10 +35,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative bg-[var(--color-bg-page)]">
-      <MeshBackground />
-      
-      <div className="w-full max-w-[420px] mx-auto z-10">
+    <AuthLayout>
+      <div className="w-full max-w-[420px] mx-auto z-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <GlassCard elevated className="p-8 md:p-10 w-full">
           <div className="flex flex-col items-center mb-8 text-center">
             <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-[rgba(0,0,0,0.05)] flex items-center justify-center mb-6">
@@ -129,6 +127,6 @@ export default function LoginPage() {
           </p>
         </GlassCard>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

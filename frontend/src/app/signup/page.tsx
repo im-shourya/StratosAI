@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MeshBackground } from "@/components/MeshBackground";
+import { AuthLayout } from "@/components/auth/AuthLayout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassInput } from "@/components/ui/GlassInput";
 import { Button } from "@/components/ui/Button";
@@ -40,10 +40,8 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative bg-[var(--color-bg-page)]">
-      <MeshBackground />
-
-      <div className="w-full max-w-[420px] mx-auto z-10 py-8">
+    <AuthLayout>
+      <div className="w-full max-w-[420px] mx-auto z-10 py-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <GlassCard elevated className="p-8 md:p-10 w-full">
           
           <div className="flex flex-col items-center mb-8 text-center">
@@ -138,6 +136,6 @@ export default function SignupPage() {
           </p>
         </GlassCard>
       </div>
-    </div>
+    </AuthLayout>
   );
 }
