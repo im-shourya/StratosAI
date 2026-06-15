@@ -9,7 +9,9 @@ import { useState, useRef, useEffect } from "react";
 export function TopNav() {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   const navLinks = [
     { name: "Home", href: "/dashboard" },
