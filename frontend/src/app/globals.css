@@ -30,14 +30,14 @@ html {
   --color-bg-page:    #F3F4F6;
 
   /* Glass Surface Tokens */
-  --glass-bg:            rgba(255, 255, 255, 0.85);
-  --glass-bg-elevated:   rgba(255, 255, 255, 0.95);
+  --glass-bg:            rgba(255, 255, 255, 0.65);
+  --glass-bg-elevated:   rgba(255, 255, 255, 0.85);
   --glass-border:        rgba(255, 255, 255, 1);
-  --glass-border-subtle: rgba(229, 231, 235, 0.5);
-  --glass-highlight:     rgba(255, 255, 255, 0.90);
-  --glass-blur:          24px;
-  --glass-blur-heavy:    40px;
-  --glass-saturate:      120%;
+  --glass-border-subtle: rgba(255, 255, 255, 0.6);
+  --glass-highlight:     rgba(255, 255, 255, 0.95);
+  --glass-blur:          32px;
+  --glass-blur-heavy:    48px;
+  --glass-saturate:      150%;
 
   /* Module-Tinted Glass */
   --glass-tint-roi:        rgba(41, 128, 185, 0.08);

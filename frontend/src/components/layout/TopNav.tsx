@@ -18,11 +18,14 @@ export function TopNav() {
     { name: "Library", href: "/library" },
   ];
 
-  // Close dropdown when clicking outside
+    // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
+      }
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -50,8 +53,8 @@ export function TopNav() {
               href={link.href}
               className={`px-5 py-2 rounded-2xl text-sm font-semibold transition-all duration-300 ${
                 isActive
-                  ? "bg-[#111111] text-white shadow-md shadow-black/10"
-                  : "text-[#4B5563] hover:text-black hover:bg-black/5"
+                  ? "bg-white/60 backdrop-blur-md shadow-[0_8px_16px_rgba(0,0,0,0.04)] border border-white/60 text-black"
+                  : "text-[#4B5563] hover:text-black hover:bg-white/40 hover:backdrop-blur-sm"
               }`}
             >
               {link.name}
@@ -74,13 +77,46 @@ export function TopNav() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-100 shadow-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors">
-            <Search size={18} className="md:hidden" />
+          <button className="md:hidden w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-100 shadow-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors">
+            <Search size={18} />
           </button>
-          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-100 shadow-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors relative">
-            <Bell size={18} />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
-          </button>
+          
+          {/* Notifications Dropdown */}
+          <div className="relative" ref={notifRef}>
+            <button 
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className="w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-100 shadow-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors relative"
+            >
+              <Bell size={18} />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-red-500 rounded-full border border-white" />
+            </button>
+
+            {isNotifOpen && (
+              <div className="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white p-2 py-3 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                <div className="px-4 py-2 mb-2 border-b border-gray-100 flex justify-between items-center">
+                  <h3 className="font-semibold text-black">Notifications</h3>
+                  <span className="text-xs text-blue-600 font-medium cursor-pointer hover:underline">Mark all as read</span>
+                </div>
+                <div className="max-h-64 overflow-y-auto">
+                  <div className="px-4 py-3 hover:bg-black/5 rounded-xl transition-colors cursor-pointer border-l-2 border-blue-500">
+                    <p className="text-sm text-black font-medium">New Assessment Ready</p>
+                    <p className="text-xs text-gray-500 mt-0.5">The Acme Fintech assessment report has been generated.</p>
+                    <p className="text-[10px] text-gray-400 mt-1">2 hours ago</p>
+                  </div>
+                  <div className="px-4 py-3 hover:bg-black/5 rounded-xl transition-colors cursor-pointer mt-1">
+                    <p className="text-sm text-black font-medium">Model Deployment Complete</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Customer Churn V2 was successfully deployed.</p>
+                    <p className="text-[10px] text-gray-400 mt-1">Yesterday</p>
+                  </div>
+                </div>
+                <div className="px-4 pt-3 mt-1 border-t border-gray-100">
+                  <button className="w-full text-center text-sm font-medium text-gray-600 hover:text-black transition-colors">
+                    View all notifications
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Profile Dropdown */}
           <div className="relative" ref={profileRef}>
@@ -95,8 +131,8 @@ export function TopNav() {
 
             {/* Dropdown Menu */}
             {isProfileOpen && (
-              <div className="absolute right-0 mt-3 w-56 bg-white/80 backdrop-blur-2xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white/60 p-2 py-3 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 z-50">
-                <div className="px-4 py-2 mb-2 border-b border-gray-100/50">
+              <div className="absolute right-0 mt-3 w-56 bg-white/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white p-2 py-3 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 z-50">
+                <div className="px-4 py-2 mb-2 border-b border-gray-100">
                   <p className="font-semibold text-sm text-black">Sarah Mitchell</p>
                   <p className="text-xs text-gray-500">sarah@nexasolutions.com</p>
                 </div>
