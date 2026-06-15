@@ -16,10 +16,10 @@ export default function LandingPage() {
             StratosAI
           </Link>
           <div className="hidden md:flex items-center gap-7 text-sm font-semibold text-[#4B5563]">
-            <Link href="#product" className="hover:text-black transition-colors">Product</Link>
-            <Link href="#features" className="hover:text-black transition-colors">Features</Link>
-            <Link href="#pricing" className="hover:text-black transition-colors">Pricing</Link>
-            <Link href="#resources" className="hover:text-black transition-colors">Resources</Link>
+            <a href="#product" className="hover:text-black transition-colors">Product</a>
+            <a href="#features" className="hover:text-black transition-colors">Features</a>
+            <a href="#integrations" className="hover:text-black transition-colors">Integrations</a>
+            <a href="#resources" className="hover:text-black transition-colors">Resources</a>
           </div>
           <div className="flex items-center gap-4 pl-4 border-l border-gray-200/50">
             <Link href="/login" className="text-sm font-semibold text-[#4B5563] hover:text-black transition-colors">
@@ -39,17 +39,17 @@ export default function LandingPage() {
 
         {/* Floating Icons */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-6xl h-full pointer-events-none">
-          <div className="absolute top-[10%] left-[20%] bg-white/60 backdrop-blur-xl p-5 rounded-2xl shadow-[0_8px_30px_rgba(234,179,8,0.2)] border border-white/50 transform -rotate-6 animate-[float_6s_ease-in-out_infinite]">
-            <Search className="w-8 h-8 text-yellow-500" />
+          <div className="absolute top-[10%] left-[20%] bg-white/40 backdrop-blur-2xl p-5 rounded-2xl shadow-[0_8px_32px_rgba(234,179,8,0.25)] border border-white/60 transform -rotate-6 animate-[float_6s_ease-in-out_infinite]">
+            <Search className="w-8 h-8 text-yellow-600 drop-shadow-sm" />
           </div>
-          <div className="absolute top-[40%] left-[10%] bg-white/60 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_30px_rgba(6,182,212,0.2)] border border-white/50 transform rotate-12 animate-[float_8s_ease-in-out_infinite_1s]">
-            <Brain className="w-10 h-10 text-cyan-500" />
+          <div className="absolute top-[40%] left-[10%] bg-white/40 backdrop-blur-2xl p-5 rounded-[2rem] shadow-[0_8px_32px_rgba(6,182,212,0.25)] border border-white/60 transform rotate-12 animate-[float_8s_ease-in-out_infinite_1s]">
+            <Brain className="w-10 h-10 text-cyan-600 drop-shadow-sm" />
           </div>
-          <div className="absolute top-[15%] right-[20%] bg-white/60 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_30px_rgba(239,68,68,0.2)] border border-white/50 transform rotate-6 animate-[float_7s_ease-in-out_infinite_0.5s]">
-            <Shield className="w-9 h-9 text-red-500" />
+          <div className="absolute top-[15%] right-[20%] bg-white/40 backdrop-blur-2xl p-5 rounded-[2rem] shadow-[0_8px_32px_rgba(239,68,68,0.25)] border border-white/60 transform rotate-6 animate-[float_7s_ease-in-out_infinite_0.5s]">
+            <Shield className="w-9 h-9 text-red-600 drop-shadow-sm" />
           </div>
-          <div className="absolute top-[45%] right-[12%] bg-white/60 backdrop-blur-xl p-4 rounded-2xl shadow-[0_8px_30px_rgba(107,114,128,0.2)] border border-white/50 transform -rotate-12 animate-[float_9s_ease-in-out_infinite_1.5s]">
-            <BarChart3 className="w-8 h-8 text-gray-700" />
+          <div className="absolute top-[45%] right-[12%] bg-white/40 backdrop-blur-2xl p-4 rounded-2xl shadow-[0_8px_32px_rgba(107,114,128,0.25)] border border-white/60 transform -rotate-12 animate-[float_9s_ease-in-out_infinite_1.5s]">
+            <BarChart3 className="w-8 h-8 text-gray-800 drop-shadow-sm" />
           </div>
         </div>
 
@@ -72,7 +72,7 @@ export default function LandingPage() {
       </section>
 
       {/* Solutions Section */}
-      <section className="py-32 bg-white relative overflow-hidden border-t border-gray-100">
+      <section id="product" className="py-32 bg-white relative overflow-hidden border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center text-center animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
           <div className="w-20 h-20 bg-purple-50 rounded-full flex items-center justify-center mb-8 border border-purple-100 shadow-inner">
             <Users className="w-10 h-10 text-[#A855F7]" />
@@ -90,7 +90,7 @@ export default function LandingPage() {
       </section>
 
       {/* Built For Everyone Section */}
-      <section className="py-32 bg-[#F9FAFB] border-t border-gray-100">
+      <section id="features" className="py-32 bg-[#F9FAFB] border-t border-gray-100">
         <div className="max-w-6xl mx-auto px-4 text-center mb-20">
           <h2 className="font-display text-5xl md:text-6xl font-bold tracking-tighter mb-6">Built for everyone</h2>
           <p className="text-xl text-[#6B7280] font-medium max-w-2xl mx-auto leading-relaxed">
@@ -146,7 +146,7 @@ export default function LandingPage() {
       </section>
 
       {/* Integrations */}
-      <section className="py-32 bg-white border-t border-gray-100">
+      <section id="integrations" className="py-32 bg-white border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-8 border border-red-100">
             <Box className="w-8 h-8 text-red-500" />
@@ -210,7 +210,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white pt-32 pb-16 overflow-hidden border-t border-[rgba(0,0,0,0.05)] relative">
+      <footer id="resources" className="bg-white pt-32 pb-16 overflow-hidden border-t border-[rgba(0,0,0,0.05)] relative">
         <div className="max-w-7xl mx-auto px-4 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-12 mb-32">
             <div className="col-span-2">
@@ -225,36 +225,29 @@ export default function LandingPage() {
             <div>
               <h5 className="font-bold text-lg mb-6 tracking-tight">Product</h5>
               <ul className="space-y-4 text-[#6B7280] font-medium">
-                <li><Link href="#" className="hover:text-black transition-colors">CoreAI</Link></li>
-                <li><Link href="#" className="hover:text-black transition-colors">Recruit</Link></li>
-                <li><Link href="#" className="hover:text-black transition-colors">Perform</Link></li>
-                <li><Link href="#" className="hover:text-black transition-colors">Pulse</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">CoreAI</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Recruit</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Perform</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Pulse</Link></li>
               </ul>
             </div>
             <div>
               <h5 className="font-bold text-lg mb-6 tracking-tight">Features</h5>
               <ul className="space-y-4 text-[#6B7280] font-medium">
-                <li><Link href="#" className="hover:text-black transition-colors">Desk</Link></li>
-                <li><Link href="#" className="hover:text-black transition-colors">Time</Link></li>
-                <li><Link href="#" className="hover:text-black transition-colors">Analytics</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Desk</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Time</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Analytics</Link></li>
               </ul>
             </div>
             <div>
               <h5 className="font-bold text-lg mb-6 tracking-tight">Resources</h5>
               <ul className="space-y-4 text-[#6B7280] font-medium">
-                <li><Link href="#" className="hover:text-black transition-colors">Blog</Link></li>
-                <li><Link href="#" className="hover:text-black transition-colors">Guides</Link></li>
-                <li><Link href="#" className="hover:text-black transition-colors">Help Center</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Blog</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Guides</Link></li>
+                <li><Link href="/" className="hover:text-black transition-colors">Help Center</Link></li>
               </ul>
             </div>
           </div>
-        </div>
-        
-        {/* Massive Blurred Text */}
-        <div className="absolute -bottom-[2vw] left-0 right-0 text-center pointer-events-none select-none overflow-hidden h-[30vw]">
-          <h2 className="font-display text-[22vw] font-bold tracking-tighter text-[#EF4444] opacity-[0.85] blur-[3px] leading-none whitespace-nowrap">
-            StratosAI
-          </h2>
         </div>
       </footer>
     </div>
