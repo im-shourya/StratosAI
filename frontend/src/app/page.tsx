@@ -9,10 +9,7 @@ export default function LandingPage() {
       {/* Floating Navigation */}
       <div className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none animate-in fade-in slide-in-from-top-4 duration-1000">
         <nav className="bg-white/70 backdrop-blur-xl rounded-full shadow-[0_8px_30px_rgba(0,0,0,0.06)] border border-white/50 px-6 py-3 flex items-center gap-8 pointer-events-auto">
-          <Link href="/" className="flex items-center gap-2 font-display text-lg font-bold tracking-tight text-black group">
-            <div className="w-8 h-8 rounded-lg bg-black flex items-center justify-center transition-transform group-hover:scale-105">
-              <Hexagon className="w-5 h-5 text-white fill-white" />
-            </div>
+          <Link href="/" className="flex items-center font-display text-lg font-bold tracking-tight text-black group">
             StratosAI
           </Link>
           <div className="hidden md:flex items-center gap-7 text-sm font-semibold text-[#4B5563]">
@@ -210,42 +207,53 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer id="resources" className="bg-white pt-32 pb-16 overflow-hidden border-t border-[rgba(0,0,0,0.05)] relative">
+      <footer id="resources" className="bg-white pt-24 pb-12 overflow-hidden border-t border-[rgba(0,0,0,0.05)] relative">
         <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-12 mb-32">
-            <div className="col-span-2">
-              <Link href="/" className="flex items-center gap-2 font-display text-xl font-bold tracking-tight text-black mb-6">
-                <Hexagon className="w-6 h-6 text-black fill-black" />
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+            <div className="md:col-span-1">
+              <Link href="/" className="flex items-center font-display text-xl font-bold tracking-tight text-black mb-6">
                 StratosAI
               </Link>
-              <p className="text-[#6B7280] font-medium max-w-sm leading-relaxed text-lg">
-                StratosAI is the AI platform that builds a thriving workplace culture—all in one place.
+              <p className="text-[#6B7280] font-medium leading-relaxed text-sm">
+                Automated AI strategy consulting for enterprises. Build board-ready roadmaps in minutes.
               </p>
             </div>
+            
             <div>
-              <h5 className="font-bold text-lg mb-6 tracking-tight">Product</h5>
-              <ul className="space-y-4 text-[#6B7280] font-medium">
-                <li><Link href="/" className="hover:text-black transition-colors">CoreAI</Link></li>
-                <li><Link href="/" className="hover:text-black transition-colors">Recruit</Link></li>
-                <li><Link href="/" className="hover:text-black transition-colors">Perform</Link></li>
-                <li><Link href="/" className="hover:text-black transition-colors">Pulse</Link></li>
+              <h5 className="font-bold text-sm text-black mb-6 tracking-tight uppercase">Product</h5>
+              <ul className="space-y-4 text-[#6B7280] text-sm font-medium">
+                <li><Link href="/dashboard" className="hover:text-black transition-colors">Dashboard</Link></li>
+                <li><Link href="/assessments" className="hover:text-black transition-colors">Assessments</Link></li>
+                <li><Link href="/signup" className="hover:text-black transition-colors">Request Demo</Link></li>
               </ul>
             </div>
+            
             <div>
-              <h5 className="font-bold text-lg mb-6 tracking-tight">Features</h5>
-              <ul className="space-y-4 text-[#6B7280] font-medium">
-                <li><Link href="/" className="hover:text-black transition-colors">Desk</Link></li>
-                <li><Link href="/" className="hover:text-black transition-colors">Time</Link></li>
-                <li><Link href="/" className="hover:text-black transition-colors">Analytics</Link></li>
+              <h5 className="font-bold text-sm text-black mb-6 tracking-tight uppercase">Company</h5>
+              <ul className="space-y-4 text-[#6B7280] text-sm font-medium">
+                <li><Link href="/about" className="hover:text-black transition-colors">About Us</Link></li>
+                <li><Link href="/contact" className="hover:text-black transition-colors">Contact</Link></li>
+                <li><Link href="/blog" className="hover:text-black transition-colors">Blog</Link></li>
               </ul>
             </div>
+
             <div>
-              <h5 className="font-bold text-lg mb-6 tracking-tight">Resources</h5>
-              <ul className="space-y-4 text-[#6B7280] font-medium">
-                <li><Link href="/" className="hover:text-black transition-colors">Blog</Link></li>
-                <li><Link href="/" className="hover:text-black transition-colors">Guides</Link></li>
-                <li><Link href="/" className="hover:text-black transition-colors">Help Center</Link></li>
+              <h5 className="font-bold text-sm text-black mb-6 tracking-tight uppercase">Legal</h5>
+              <ul className="space-y-4 text-[#6B7280] text-sm font-medium">
+                <li><Link href="/privacy" className="hover:text-black transition-colors">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="hover:text-black transition-colors">Terms of Service</Link></li>
               </ul>
+            </div>
+          </div>
+          
+          <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-sm text-gray-500 font-medium">
+              © {new Date().getFullYear()} StratosAI. All rights reserved.
+            </p>
+            <div className="flex gap-6">
+              <Link href="#" className="text-gray-400 hover:text-black transition-colors">Twitter</Link>
+              <Link href="#" className="text-gray-400 hover:text-black transition-colors">LinkedIn</Link>
+              <Link href="#" className="text-gray-400 hover:text-black transition-colors">GitHub</Link>
             </div>
           </div>
         </div>
