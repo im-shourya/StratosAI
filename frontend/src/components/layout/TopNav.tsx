@@ -138,10 +138,10 @@ export function TopNav() {
                 <div className="px-4 py-3 text-sm text-gray-500 text-center animate-pulse">Searching...</div>
               ) : (
                 <>
-                  {searchResults.assessments?.length > 0 && (
+                  {(searchResults.assessments?.length ?? 0) > 0 && (
                     <div className="mb-2">
                       <h4 className="px-3 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Assessments</h4>
-                      {searchResults.assessments.map((item: any) => (
+                      {searchResults.assessments?.map((item: any) => (
                         <Link
                           href={`/assessment/${item.id}/report`}
                           key={item.id}
