@@ -5,9 +5,6 @@ RUN apk add --no-cache python3 make g++
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV PORT=8080
-
 # 1. Copy package files to install dependencies
 COPY package.json package-lock.json ./
 COPY backend/package.json backend/
@@ -25,6 +22,8 @@ RUN cd backend && npx prisma generate
 RUN cd backend && npx nest build
 
 # 5. Runtime Configuration
+ENV NODE_ENV=production
+ENV PORT=8080
 EXPOSE 8080
 WORKDIR /app/backend
 CMD ["node", "dist/main.js"]
