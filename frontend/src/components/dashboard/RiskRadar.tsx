@@ -15,14 +15,18 @@ function getRiskLevel(score: number) {
   return { text: "LOW", color: "var(--color-success)" };
 }
 
-export function RiskRadar() {
-  const [risks, setRisks] = useState<RiskItem[]>([]);
+export function RiskRadar({ initialData }: { initialData?: RiskItem[] }) {
+  const [risks, setRisks] = useState<RiskItem[]>(initialData || []);
 
   useEffect(() => {
-    fetchApi('/api/dashboard/risks')
-      .then(res => setRisks(res))
-      .catch(console.error);
-  }, []);
+    if (!initialData) {
+      fetchApi('/api/dashboard/risks')
+        .then(res => setRisks(res))
+        .catch(console.error);
+    } else {
+      setRisks(initialData);
+    }
+  }, [initialData]);
 
   if (risks.length === 0) return <div className="flex flex-col gap-4 p-4 animate-pulse h-48 bg-gray-50/50 rounded-xl" />;
 

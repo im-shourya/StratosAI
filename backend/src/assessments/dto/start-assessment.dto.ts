@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsUUID } from 'class-validator';
+import { IsString, IsOptional, IsUUID, MinLength } from 'class-validator';
 
 export class StartAssessmentDto {
   @IsOptional()
@@ -6,9 +6,11 @@ export class StartAssessmentDto {
 
   @IsOptional()
   @IsString()
+  @MinLength(3)
   department?: string;
 
   @IsOptional()
   @IsString()
+  @MinLength(3)
   project_name?: string;
 }
