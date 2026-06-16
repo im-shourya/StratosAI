@@ -1,0 +1,36 @@
+{
+  "max_training_hours": 197.9,
+  "max_deployments": 58,
+  "max_investment": 54170345.0,
+  "max_maturity_score": 10.0,
+  "mean_revenue_impact": 2591989.184135,
+  "industries": [
+    "Financial Services",
+    "Agriculture",
+    "Energy",
+    "Retail",
+    "Technology",
+    "Manufacturing",
+    "Telecom",
+    "Education",
+    "Logistics",
+    "Healthcare"
+  ],
+  "countries": [
+    "China",
+    "Germany",
+    "United States",
+    "South Korea",
+    "United Kingdom",
+    "Brazil",
+    "France",
+    "Sweden",
+    "Netherlands",
+    "Canada",
+    "Japan",
+    "Australia",
+    "India",
+    "Singapore",
+    "UAE"
+  ]
+}
