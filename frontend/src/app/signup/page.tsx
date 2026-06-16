@@ -11,7 +11,7 @@ import { fetchApi } from "@/lib/api";
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({
-    email: "", password: "", company_name: "", industry: "",
+    email: "", password: ""
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -57,15 +57,7 @@ export default function SignupPage() {
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <GlassInput
-              name="company_name"
-              label="Company Name*"
-              type="text"
-              placeholder="Acme Corp"
-              value={formData.company_name}
-              onChange={handleChange}
-              required
-            />
+
             <GlassInput
               name="email"
               label="Email address*"

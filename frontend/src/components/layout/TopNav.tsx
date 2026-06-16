@@ -5,13 +5,38 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Search, Bell, Settings, User, LogOut, Hexagon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { fetchApi } from "@/lib/api";
 
 export function TopNav() {
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<{ first_name?: string, last_name?: string, email?: string } | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchResults, setSearchResults] = useState<{ assessments?: any[], vendors?: any[] }>({});
+
+  useEffect(() => {
+    if (searchQuery.length < 2) {
+      setSearchResults({});
+      return;
+    }
+    
+    setIsSearching(true);
+    const timer = setTimeout(() => {
+      fetchApi(`/api/assessments/search?q=${encodeURIComponent(searchQuery)}`)
+        .then(res => setSearchResults(res))
+        .catch(console.error)
+        .finally(() => setIsSearching(false));
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const navLinks = [
     { name: "Home", href: "/dashboard" },
@@ -20,7 +45,13 @@ export function TopNav() {
     { name: "Library", href: "/library" },
   ];
 
-    // Close dropdowns when clicking outside
+  useEffect(() => {
+    fetchApi('/api/auth/me')
+      .then(res => setUserProfile(res))
+      .catch(err => console.error("Failed to load user profile in TopNav", err));
+  }, []);
+
+  // Close dropdowns when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
@@ -29,10 +60,30 @@ export function TopNav() {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setIsNotifOpen(false);
       }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const getInitials = () => {
+    if (userProfile?.first_name && userProfile?.last_name) {
+      return `${userProfile.first_name[0]}${userProfile.last_name[0]}`.toUpperCase();
+    }
+    if (userProfile?.email) {
+      return userProfile.email.substring(0, 2).toUpperCase();
+    }
+    return "U";
+  };
+
+  const getDisplayName = () => {
+    if (userProfile?.first_name || userProfile?.last_name) {
+      return `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim();
+    }
+    return "User";
+  };
 
   return (
     <header
@@ -67,13 +118,71 @@ export function TopNav() {
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         {/* Search Input */}
-        <div className="hidden md:flex items-center relative">
+        <div className="hidden md:flex items-center relative" ref={searchRef}>
           <Search size={18} className="absolute left-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search assessments, reports..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setIsSearchOpen(true);
+            }}
+            onFocus={() => setIsSearchOpen(true)}
+            placeholder="Search assessments, vendors..."
             className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
           />
+
+          {isSearchOpen && searchQuery.length > 1 && (
+            <div className="absolute top-full mt-2 w-full max-w-[400px] right-0 bg-white/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white p-2 py-3 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 z-50 max-h-[400px] overflow-y-auto">
+              {isSearching ? (
+                <div className="px-4 py-3 text-sm text-gray-500 text-center animate-pulse">Searching...</div>
+              ) : (
+                <>
+                  {searchResults.assessments?.length > 0 && (
+                    <div className="mb-2">
+                      <h4 className="px-3 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Assessments</h4>
+                      {searchResults.assessments.map((item: any) => (
+                        <Link
+                          href={`/assessment/${item.id}/report`}
+                          key={item.id}
+                          onClick={() => setIsSearchOpen(false)}
+                          className="flex flex-col px-3 py-2 hover:bg-black/5 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-black">{item.project_name}</span>
+                          <span className="text-xs text-gray-500 flex gap-2">
+                            <span>{item.department}</span>
+                            <span>•</span>
+                            <span className="truncate">{item.id.substring(0, 8)}...</span>
+                          </span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {searchResults.vendors?.length > 0 && (
+                    <div>
+                      <h4 className="px-3 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Vendors</h4>
+                      {searchResults.vendors.map((item: any) => (
+                        <Link
+                          href={`/vendors`}
+                          key={item._id}
+                          onClick={() => setIsSearchOpen(false)}
+                          className="flex flex-col px-3 py-2 hover:bg-black/5 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <span className="text-sm font-medium text-black">{item.name}</span>
+                          <span className="text-xs text-gray-500">{item.category}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+
+                  {searchResults.assessments?.length === 0 && searchResults.vendors?.length === 0 && (
+                    <div className="px-4 py-3 text-sm text-gray-500 text-center">No results found for "{searchQuery}"</div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
@@ -126,7 +235,7 @@ export function TopNav() {
               className="w-10 h-10 rounded-full ml-2 border-[3px] border-white shadow-sm overflow-hidden focus:outline-none hover:ring-2 hover:ring-purple-200 transition-all"
             >
               <div className="w-full h-full bg-gradient-to-tr from-[#A855F7] to-[#3B82F6] flex items-center justify-center text-white font-bold text-sm">
-                SM
+                {getInitials()}
               </div>
             </button>
 
@@ -134,8 +243,8 @@ export function TopNav() {
             {isProfileOpen && (
               <div className="absolute right-0 mt-3 w-56 bg-white/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white p-2 py-3 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 z-50">
                 <div className="px-4 py-2 mb-2 border-b border-gray-100">
-                  <p className="font-semibold text-sm text-black">Sarah Mitchell</p>
-                  <p className="text-xs text-gray-500">sarah@nexasolutions.com</p>
+                  <p className="font-semibold text-sm text-black">{getDisplayName()}</p>
+                  <p className="text-xs text-gray-500">{userProfile?.email || "Loading..."}</p>
                 </div>
                 <Link
                   href="/settings"

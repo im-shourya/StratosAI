@@ -1,20 +1,70 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
-import { Plus, Search, Filter } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Plus, Search, Filter, X } from "lucide-react";
+import { fetchApi } from "@/lib/api";
 
-const ASSESSMENTS = [
-  { id: "1", company: "Acme Fintech Ltd", industry: "Financial Services", status: "completed" as const, date: "Jun 12, 2026", roi: "142%", progress: 100 },
-  { id: "2", company: "Nova Healthcare", industry: "Healthcare", status: "active" as const, date: "Jun 10, 2026", roi: "--", progress: 65 },
-  { id: "3", company: "Apex Manufacturing", industry: "Manufacturing", status: "pending" as const, date: "Jun 8, 2026", roi: "--", progress: 10 },
-  { id: "4", company: "Global Retail Partners", industry: "Retail", status: "completed" as const, date: "May 25, 2026", roi: "215%", progress: 100 },
-  { id: "5", company: "SecureData Corp", industry: "Technology", status: "error" as const, date: "May 15, 2026", roi: "--", progress: 40 },
-];
+interface AssessmentItem {
+  id: string;
+  company: string; // Keep this name in frontend interface for now if we want, or change it
+  project_name: string;
+  department: string;
+  status: 'completed' | 'active' | 'pending' | 'error';
+  date: string;
+  roi: string;
+  progress: number;
+}
 
 export default function AssessmentsPage() {
+  const [assessments, setAssessments] = useState<AssessmentItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [department, setDepartment] = useState("");
+  const [isStarting, setIsStarting] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchApi('/api/assessments')
+      .then(res => {
+        setAssessments(res);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleStartAssessment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsStarting(true);
+    try {
+      const res = await fetchApi('/api/assessments/start', {
+        method: 'POST',
+        body: JSON.stringify({
+          project_name: projectName || "New Project",
+          department: department || "Unknown"
+        })
+      });
+      if (res.assessment_id) {
+        router.push(`/assessment/${res.assessment_id}/chat`);
+      }
+    } catch (err) {
+      console.error("Failed to start assessment:", err);
+      setIsStarting(false);
+    }
+  };
+
+  if (loading) return <div className="max-w-6xl mx-auto space-y-6 animate-pulse h-screen bg-gray-50/50 rounded-3xl" />;
+  
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -24,11 +74,9 @@ export default function AssessmentsPage() {
             Manage and view all your strategic AI assessments.
           </p>
         </div>
-        <Link href="/assessment/new/chat">
-          <Button size="md" className="gap-2">
-            <Plus size={16} /> New Assessment
-          </Button>
-        </Link>
+        <Button size="md" className="gap-2" onClick={() => setIsModalOpen(true)}>
+          <Plus size={16} /> New Assessment
+        </Button>
       </div>
 
       <GlassCard className="flex flex-col sm:flex-row gap-3">
@@ -42,7 +90,11 @@ export default function AssessmentsPage() {
       </GlassCard>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {ASSESSMENTS.map((a) => (
+        {assessments.length === 0 ? (
+          <div className="col-span-full py-12 text-center text-gray-500">
+            No assessments found. Click "New Assessment" to start your first one!
+          </div>
+        ) : assessments.map((a) => (
           <GlassCard key={a.id} interactive className="flex flex-col h-full">
             <div className="flex justify-between items-start mb-4">
               <StatusPill status={a.status} />
@@ -50,8 +102,8 @@ export default function AssessmentsPage() {
             </div>
             
             <div className="flex-1">
-              <h3 className="font-display font-semibold text-lg mb-1" style={{ color: "var(--color-navy)" }}>{a.company}</h3>
-              <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>{a.industry}</p>
+              <h3 className="font-display font-semibold text-lg mb-1" style={{ color: "var(--color-navy)" }}>{a.project_name}</h3>
+              <p className="text-sm mb-4" style={{ color: "var(--color-text-secondary)" }}>{a.department}</p>
             </div>
 
             <div className="mt-auto space-y-4">
@@ -95,6 +147,53 @@ export default function AssessmentsPage() {
           </GlassCard>
         ))}
       </div>
+
+      {/* New Assessment Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm px-4">
+          <GlassCard className="w-full max-w-md animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold font-display" style={{ color: "var(--color-navy)" }}>Start New Assessment</h2>
+              <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleStartAssessment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                <input
+                  type="text"
+                  required
+                  value={projectName}
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  placeholder="e.g. Churn Prediction Model"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                <input
+                  type="text"
+                  required
+                  value={department}
+                  onChange={(e) => setDepartment(e.target.value)}
+                  className="w-full px-4 py-2 bg-white/50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20"
+                  placeholder="e.g. Customer Success"
+                />
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3">
+                <Button type="button" variant="glass" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={isStarting}>
+                  {isStarting ? "Starting..." : "Start Assessment"}
+                </Button>
+              </div>
+            </form>
+          </GlassCard>
+        </div>
+      )}
     </div>
   );
 }
