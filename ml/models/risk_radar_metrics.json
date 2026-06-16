@@ -1,0 +1,22 @@
+{
+  "f1_technical": 1.0,
+  "f1_financial": 0.991,
+  "f1_talent": 1.0,
+  "f1_regulatory": 0.9828,
+  "f1_market": 1.0,
+  "feature_cols": [
+    "investment_amount",
+    "ai_adoption_level",
+    "ai_maturity_score",
+    "automation_rate",
+    "employee_training_hours",
+    "num_ai_deployments",
+    "industry_encoded",
+    "years_since_2015",
+    "investment_per_deployment",
+    "training_per_deployment",
+    "investment_maturity",
+    "automation_maturity",
+    "training_adoption"
+  ]
+}

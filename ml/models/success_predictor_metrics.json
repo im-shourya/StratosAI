@@ -1,0 +1,21 @@
+{
+  "auc_roc": 0.9775,
+  "f1": 0.893,
+  "feature_cols": [
+    "investment_amount",
+    "ai_adoption_level",
+    "ai_adoption_level_int",
+    "automation_rate",
+    "employee_training_hours",
+    "ai_maturity_score",
+    "num_ai_deployments",
+    "industry_encoded",
+    "country_encoded",
+    "years_since_2015",
+    "investment_per_deployment",
+    "training_per_deployment",
+    "investment_maturity",
+    "automation_maturity",
+    "training_adoption"
+  ]
+}

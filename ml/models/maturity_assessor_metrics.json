@@ -1,0 +1,20 @@
+{
+  "k": 5,
+  "silhouette": 0.3253,
+  "tier_map": {
+    "0": 1,
+    "4": 2,
+    "2": 3,
+    "1": 4,
+    "3": 5
+  },
+  "feature_cols": [
+    "ai_adoption_level",
+    "automation_rate",
+    "num_ai_deployments",
+    "employee_training_hours",
+    "ai_maturity_score",
+    "investment_maturity",
+    "automation_maturity"
+  ]
+}
