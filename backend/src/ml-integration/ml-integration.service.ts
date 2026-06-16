@@ -18,8 +18,11 @@ export class MlIntegrationService {
   async predictFull(features: any): Promise<any> {
     try {
       this.logger.log(`Calling Flask ML API at ${this.mlApiUrl}/ml/predict/full`);
+      const hfToken = this.configService.get<string>('HF_ACCESS_TOKEN');
+      const headers = hfToken ? { Authorization: `Bearer ${hfToken}` } : {};
+
       const response = await lastValueFrom(
-        this.httpService.post(`${this.mlApiUrl}/ml/predict/full`, features)
+        this.httpService.post(`${this.mlApiUrl}/ml/predict/full`, features, { headers })
       );
       return response.data;
     } catch (error: any) {
