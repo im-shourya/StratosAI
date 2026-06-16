@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { MlIntegrationService } from '../ml-integration/ml-integration.service';
 import { LlmService } from '../chat/llm.service';
 
+import { VendorsService } from '../vendors/vendors.service';
+
 @Injectable()
 export class AssessmentsService {
   private readonly logger = new Logger(AssessmentsService.name);
@@ -17,7 +19,8 @@ export class AssessmentsService {
     @InjectModel(Conversation.name) private conversationModel: Model<Conversation>,
     private readonly mlIntegration: MlIntegrationService,
     @Inject(forwardRef(() => LlmService))
-    private readonly llmService: LlmService
+    private readonly llmService: LlmService,
+    private readonly vendorsService: VendorsService
   ) {}
 
   async startAssessment(data: StartAssessmentDto) {
@@ -28,9 +31,8 @@ export class AssessmentsService {
       data: {
         user_id: data.user_id as string,
         session_id: sessionId,
-        company_name: data.company_name || 'Unknown',
-        industry: data.industry || 'Unknown',
-        company_size: 'Unknown',
+        project_name: data.project_name || 'New Project',
+        department: data.department || 'Unknown',
         ai_budget: 0,
         ai_maturity: 1,
         status: 'IN_PROGRESS'
@@ -38,15 +40,15 @@ export class AssessmentsService {
     });
 
     const initialExtractedData: any = {};
-    if (data.industry) initialExtractedData.industry = data.industry;
-    if (data.company_name) initialExtractedData.company_name = data.company_name;
+    if (data.department) initialExtractedData.department = data.department;
+    if (data.project_name) initialExtractedData.project_name = data.project_name;
 
-    const companyStr = data.company_name ? ` for ${data.company_name}` : '';
-    const industryStr = data.industry ? ` in the ${data.industry} sector` : '';
+    const projectStr = data.project_name ? ` for the ${data.project_name} project` : '';
+    const deptStr = data.department ? ` in the ${data.department} department` : '';
     
     const initialMessage = {
       role: 'assistant',
-      content: `Welcome to the StratosAI Corporate Strategy Advisor! To help tailor a predictive AI roadmap and ROI model${companyStr}${industryStr}, I need to understand your primary objectives. What specific business problem or workflow are you hoping to optimize using AI?`,
+      content: `Welcome to the StratosAI Internal Strategy Advisor! To help tailor a predictive AI roadmap and ROI model${projectStr}${deptStr}, I need to understand your primary objectives. What specific business problem or workflow are you hoping to optimize using AI?`,
       timestamp: new Date()
     };
 
@@ -73,7 +75,10 @@ export class AssessmentsService {
   }
 
   async getAssessment(assessmentId: string) {
-    const assessment = await this.prisma.assessment.findUnique({ where: { id: assessmentId } });
+    const assessment = await this.prisma.assessment.findUnique({ 
+      where: { id: assessmentId },
+      include: { prediction: true, user: true }
+    });
     if (!assessment) throw new NotFoundException('Assessment not found');
 
     const conversation = await this.conversationModel.findOne({ assessment_id: assessmentId });
@@ -85,6 +90,31 @@ export class AssessmentsService {
       extracted_data: conversation.extracted_data,
       phase: conversation.phase
     };
+  }
+
+  async getAllAssessments(userId: string) {
+    const assessments = await this.prisma.assessment.findMany({
+      where: { user_id: userId },
+      include: { prediction: true },
+      orderBy: { created_at: 'desc' }
+    });
+
+    return assessments.map(a => {
+      let progress = 0;
+      if (a.status === 'completed' || a.status === 'COMPLETED') progress = 100;
+      else if (a.status === 'error' || a.status === 'FAILED') progress = 40;
+      else progress = 65;
+
+      return {
+        id: a.id,
+        project_name: a.project_name,
+        department: a.department,
+        status: a.status.toLowerCase(),
+        date: a.created_at.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        roi: a.prediction?.roi_percentage ? `${a.prediction.roi_percentage}%` : '--',
+        progress
+      };
+    });
   }
 
   async addMessage(assessmentId: string, message: { role: string; content: string; timestamp: Date }) {
@@ -109,7 +139,7 @@ export class AssessmentsService {
     try {
       // Call ML Integration
       const features = {
-        industry: assessment.industry,
+        industry: assessment.user?.industry || 'Unknown',
         budget: assessment.ai_budget,
         maturity: assessment.ai_maturity,
         ...assessment.extracted_data
@@ -124,6 +154,7 @@ export class AssessmentsService {
             assessment_id: assessment.id,
             annual_revenue_impact: mlResults.annualRevenueImpact || 0,
             quarterly_revenue_impact: mlResults.quarterlyRevenueImpact || 0,
+            annual_net_benefit: mlResults.annualNetBenefit || 0,
             productivity_gain_pct: mlResults.productivityGainPct || 0,
             roi_percentage: mlResults.roiPercentage || 0,
             risk_score: mlResults.riskScore || 0,
@@ -160,5 +191,42 @@ export class AssessmentsService {
 
       throw error;
     }
+  }
+
+  async searchGlobal(userId: string, query: string) {
+    if (!query || query.length < 2) return { assessments: [], vendors: [] };
+
+    // Check if query is a valid UUID
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(query);
+
+    const orConditions: any[] = [
+      { project_name: { contains: query, mode: 'insensitive' } },
+      { department: { contains: query, mode: 'insensitive' } }
+    ];
+
+    if (isUuid) {
+      orConditions.push({ id: query });
+    }
+
+    // Search assessments by project name, department, or exact ID
+    const assessments = await this.prisma.assessment.findMany({
+      where: {
+        user_id: userId,
+        OR: orConditions
+      },
+      take: 5,
+      select: {
+        id: true,
+        project_name: true,
+        department: true,
+        status: true,
+        created_at: true
+      }
+    });
+
+    // Search vendors
+    const vendors = await this.vendorsService.search(query);
+
+    return { assessments, vendors };
   }
 }

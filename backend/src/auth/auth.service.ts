@@ -60,4 +60,39 @@ export class AuthService {
       }
     };
   }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    
+    return {
+      id: user.id,
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      company_name: user.company_name,
+      plan_tier: user.plan_tier
+    };
+  }
+
+  async updateProfile(userId: string, data: { first_name?: string; last_name?: string; email?: string; company_name?: string }) {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
+        company_name: data.company_name
+      }
+    });
+
+    return {
+      id: updated.id,
+      email: updated.email,
+      first_name: updated.first_name,
+      last_name: updated.last_name,
+      company_name: updated.company_name,
+      plan_tier: updated.plan_tier
+    };
+  }
 }

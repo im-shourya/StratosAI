@@ -6,11 +6,14 @@ import { ConversationsModule } from '../conversations/conversations.module';
 import { MlIntegrationModule } from '../ml-integration/ml-integration.module';
 import { ChatModule } from '../chat/chat.module';
 
+import { VendorsModule } from '../vendors/vendors.module';
+
 @Module({
   imports: [
     PrismaModule,
     ConversationsModule,
     MlIntegrationModule,
+    VendorsModule,
     forwardRef(() => ChatModule),
   ],
   controllers: [AssessmentsController],

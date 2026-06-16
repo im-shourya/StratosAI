@@ -10,7 +10,11 @@ model User {
   id            String       @id @default(uuid()) @db.Uuid
   email         String       @unique @db.VarChar(255)
   password_hash String       @db.VarChar
+  first_name    String?      @db.VarChar(100)
+  last_name     String?      @db.VarChar(100)
   company_name  String       @db.VarChar(200)
+  industry      String?      @db.VarChar(100)
+  company_size  String?      @db.VarChar(100)
   plan_tier     String       @default("free") @db.VarChar // enum replacement
   created_at    DateTime     @default(now()) @db.Timestamp(6)
   updated_at    DateTime     @updatedAt @db.Timestamp(6)
@@ -24,9 +28,8 @@ model Assessment {
   id                      String       @id @default(uuid()) @db.Uuid
   session_id              String       @unique @db.VarChar
   user_id                 String?      @db.Uuid
-  company_name            String?      @db.VarChar
-  industry                String?      @db.VarChar
-  company_size            String?      @db.VarChar
+  project_name            String       @db.VarChar
+  department              String?      @db.VarChar
   ai_budget               Decimal?     @db.Decimal
   ai_maturity             Int?         @db.Integer
   automation_rate         Decimal?     @db.Decimal
