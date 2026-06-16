@@ -233,7 +233,6 @@ export default function LandingPage() {
               <ul className="space-y-4 text-[#6B7280] text-sm font-medium">
                 <li><Link href="/about" className="hover:text-black transition-colors">About Us</Link></li>
                 <li><Link href="/contact" className="hover:text-black transition-colors">Contact</Link></li>
-                <li><Link href="/blog" className="hover:text-black transition-colors">Blog</Link></li>
               </ul>
             </div>
 
