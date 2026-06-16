@@ -159,10 +159,10 @@ export function TopNav() {
                     </div>
                   )}
 
-                  {searchResults.vendors?.length > 0 && (
+                  {(searchResults.vendors?.length ?? 0) > 0 && (
                     <div>
                       <h4 className="px-3 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Vendors</h4>
-                      {searchResults.vendors.map((item: any) => (
+                      {searchResults.vendors?.map((item: any) => (
                         <Link
                           href={`/vendors`}
                           key={item._id}
