@@ -1,17 +1,28 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { GlassCard } from "@/components/ui/GlassCard";
+import { fetchApi } from "@/lib/api";
 
-const DATA = [
-  { name: "Fraud Detection ML", value: 120000, color: "#2980B9" },
-  { name: "Customer Churn Predictor", value: 90000, color: "#6C3483" },
-  { name: "Process Automation", value: 60000, color: "#1D9E75" },
-  { name: "Talent & Training", value: 30000, color: "#D4AC0D" },
-];
+interface BudgetItem {
+  name: string;
+  value: number;
+  color: string;
+}
 
 export function BudgetDonut() {
-  const total = DATA.reduce((sum, d) => sum + d.value, 0);
+  const [data, setData] = useState<BudgetItem[]>([]);
+
+  useEffect(() => {
+    fetchApi('/api/dashboard/budget')
+      .then(res => setData(res))
+      .catch(console.error);
+  }, []);
+
+  const total = data.reduce((sum, d) => sum + d.value, 0);
+
+  if (data.length === 0) return <GlassCard tint="budget" className="h-48 animate-pulse"><div /></GlassCard>;
 
   return (
     <GlassCard tint="budget">
@@ -23,7 +34,7 @@ export function BudgetDonut() {
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={DATA}
+                data={data}
                 cx="50%"
                 cy="50%"
                 innerRadius={35}
@@ -32,7 +43,7 @@ export function BudgetDonut() {
                 dataKey="value"
                 stroke="none"
               >
-                {DATA.map((entry, index) => (
+                {data.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} opacity={0.85} />
                 ))}
               </Pie>
@@ -40,7 +51,7 @@ export function BudgetDonut() {
           </ResponsiveContainer>
         </div>
         <div className="flex flex-col gap-2 flex-1">
-          {DATA.map((item) => (
+          {data.map((item) => (
             <div key={item.name} className="flex items-center gap-2">
               <div
                 className="w-2.5 h-2.5 rounded-full shrink-0"

@@ -1,19 +1,38 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Button } from "@/components/ui/Button";
 import { BookOpen, Search, ExternalLink, ArrowRight } from "lucide-react";
+import { fetchApi } from "@/lib/api";
 
-const USE_CASES = [
-  { id: 1, title: "Fraud Detection & AML", category: "Risk", impact: "High", cost: "High", desc: "Machine learning models to detect anomalous transaction patterns in real-time." },
-  { id: 2, title: "Customer Churn Prediction", category: "Marketing", impact: "High", cost: "Medium", desc: "Predictive analytics to identify customers at risk of leaving before they churn." },
-  { id: 3, title: "Automated Document Processing", category: "Operations", impact: "Medium", cost: "Medium", desc: "NLP-powered extraction of data from unstructured invoices and contracts." },
-  { id: 4, title: "IT Helpdesk Chatbot", category: "Support", impact: "Medium", cost: "Low", desc: "LLM-based assistant to resolve tier 1 internal IT tickets automatically." },
-  { id: 5, title: "Supply Chain Forecasting", category: "Operations", impact: "High", cost: "High", desc: "Demand forecasting models combining internal sales data with external market signals." },
-  { id: 6, title: "Candidate Resume Screening", category: "HR", impact: "Low", cost: "Low", desc: "Automated parsing and ranking of applicant resumes against job descriptions." },
-];
+interface UseCase {
+  id: string;
+  title: string;
+  category: string;
+  impact: string;
+  cost: string;
+  desc: string;
+}
 
 export default function LibraryPage() {
+  const [useCases, setUseCases] = useState<UseCase[]>([]);
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchApi('/api/benchmarks/use-cases')
+      .then(res => {
+        setUseCases(res);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <div className="max-w-6xl mx-auto space-y-6 animate-pulse h-screen bg-gray-50/50 rounded-3xl" />;
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -33,7 +52,7 @@ export default function LibraryPage() {
       </GlassCard>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {USE_CASES.map((uc) => (
+        {useCases.map((uc) => (
           <GlassCard key={uc.id} interactive className="flex flex-col h-full hover:border-[var(--color-primary)] transition-colors">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-semibold px-2 py-1 rounded-md glass" style={{ color: "var(--color-text-secondary)" }}>

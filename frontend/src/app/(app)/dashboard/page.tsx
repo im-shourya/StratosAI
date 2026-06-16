@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { KpiCard } from "@/components/dashboard/KpiCard";
 import { RiskRadar } from "@/components/dashboard/RiskRadar";
 import { BudgetDonut } from "@/components/dashboard/BudgetDonut";
@@ -7,8 +8,37 @@ import { PipelineChart } from "@/components/dashboard/PipelineChart";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { Calendar, Link2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
+import { fetchApi } from "@/lib/api";
+
+interface DashboardMetrics {
+  totalProjectedRoi: string;
+  departmentsEngaged: string;
+  completedProjects: string;
+}
+
+interface BudgetItem {
+  name: string;
+  value: number;
+  percentage: number;
+  color: string;
+}
 
 export default function DashboardPage() {
+  const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
+  const [budget, setBudget] = useState<BudgetItem[]>([]);
+
+  useEffect(() => {
+    fetchApi('/api/dashboard/metrics')
+      .then(res => setMetrics(res))
+      .catch(console.error);
+      
+    fetchApi('/api/dashboard/budget')
+      .then(res => setBudget(res))
+      .catch(console.error);
+  }, []);
+
+  if (!metrics) return <div className="max-w-[1400px] mx-auto space-y-6 animate-pulse bg-gray-50/50 h-screen rounded-3xl" />;
+
   return (
     <div className="max-w-[1400px] mx-auto space-y-6">
       
@@ -49,42 +79,25 @@ export default function DashboardPage() {
         <div className="lg:col-span-1 flex flex-col">
           <KpiCard
             label="Total Projected ROI"
-            value="$41,540"
+            value={metrics.totalProjectedRoi}
             trend={{ direction: "up", value: "15%" }}
           >
             <div className="space-y-4">
-              {/* Automation */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm font-medium">
-                  <span style={{ color: "var(--color-text-secondary)" }}>Automation</span>
-                  <span style={{ color: "var(--color-navy)" }}>$26,800</span>
-                </div>
-                <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
-                  <div className="h-full w-[65%] rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]" style={{ background: "repeating-linear-gradient(45deg, #10B981, #10B981 2px, #34D399 2px, #34D399 6px)" }} />
-                </div>
-              </div>
-              
-              {/* Machine Learning */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm font-medium">
-                  <span style={{ color: "var(--color-text-secondary)" }}>Machine Learning</span>
-                  <span style={{ color: "var(--color-navy)" }}>$10,400</span>
-                </div>
-                <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
-                  <div className="h-full w-[40%] rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]" style={{ background: "repeating-linear-gradient(45deg, #3B82F6, #3B82F6 2px, #60A5FA 2px, #60A5FA 6px)" }} />
-                </div>
-              </div>
-              
-              {/* Predictive Analytics */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-sm font-medium">
-                  <span style={{ color: "var(--color-text-secondary)" }}>Predictive Analytics</span>
-                  <span style={{ color: "var(--color-navy)" }}>$4,340</span>
-                </div>
-                <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
-                  <div className="h-full w-[25%] rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]" style={{ background: "repeating-linear-gradient(45deg, #EC4899, #EC4899 2px, #F472B6 2px, #F472B6 6px)" }} />
-                </div>
-              </div>
+              {budget.length === 0 ? (
+                <div className="text-sm text-gray-400">No budget data available</div>
+              ) : (
+                budget.map((item) => (
+                  <div key={item.name} className="space-y-1">
+                    <div className="flex justify-between text-sm font-medium">
+                      <span style={{ color: "var(--color-text-secondary)" }}>{item.name}</span>
+                      <span style={{ color: "var(--color-navy)" }}>${item.value.toLocaleString()}</span>
+                    </div>
+                    <div className="h-3 w-full bg-white border border-gray-100 shadow-sm rounded-full overflow-hidden p-[1.5px]">
+                      <div className="h-full rounded-full shadow-[inset_0_2px_4px_rgba(255,255,255,0.4)]" style={{ width: `${item.percentage}%`, background: `repeating-linear-gradient(45deg, ${item.color}, ${item.color} 2px, ${item.color}99 2px, ${item.color}99 6px)` }} />
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </KpiCard>
         </div>
@@ -109,21 +122,21 @@ export default function DashboardPage() {
         {/* Stacked KPIs */}
         <div className="lg:col-span-1 flex flex-col gap-6">
           <KpiCard
-            label="Active Vendors"
-            value="106k"
+            label="Departments Engaged"
+            value={metrics.departmentsEngaged}
           >
              <div className="flex justify-end text-sm">
                 <span style={{ color: "var(--color-text-secondary)" }}>vs last period </span>
-                <span className="font-medium ml-2" style={{ color: "var(--color-navy)" }}>+34,002</span>
+                <span className="font-medium ml-2" style={{ color: "var(--color-navy)" }}>+2</span>
              </div>
           </KpiCard>
           <KpiCard
-            label="Models Deployed"
-            value="1,284"
+            label="Completed Projects"
+            value={metrics.completedProjects}
           >
              <div className="flex justify-end text-sm">
                 <span style={{ color: "var(--color-text-secondary)" }}>vs last period </span>
-                <span className="font-medium ml-2" style={{ color: "var(--color-navy)" }}>+320</span>
+                <span className="font-medium ml-2" style={{ color: "var(--color-navy)" }}>+5</span>
              </div>
           </KpiCard>
         </div>

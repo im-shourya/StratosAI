@@ -1,10 +1,67 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassInput } from "@/components/ui/GlassInput";
 import { Button } from "@/components/ui/Button";
+import { fetchApi } from "@/lib/api";
+
+interface UserProfile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  company_name: string;
+  plan_tier: string;
+}
 
 export default function AccountSettings() {
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetchApi('/api/auth/me')
+      .then(res => {
+        setProfile(res);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error(err);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!profile) return;
+    setProfile({ ...profile, [e.target.name]: e.target.value });
+  };
+
+  const handleSave = async () => {
+    if (!profile) return;
+    setSaving(true);
+    try {
+      await fetchApi('/api/auth/profile', {
+        method: 'PUT',
+        body: JSON.stringify({
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          email: profile.email,
+          company_name: profile.company_name
+        })
+      });
+      alert('Profile updated successfully!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div className="space-y-6 animate-pulse bg-gray-50/50 h-screen rounded-3xl" />;
+  if (!profile) return <div>Failed to load profile.</div>;
+
   return (
     <div className="space-y-6">
       <div>
@@ -15,24 +72,28 @@ export default function AccountSettings() {
       <GlassCard className="space-y-6">
         <h3 className="font-semibold" style={{ color: "var(--color-navy)" }}>Personal Information</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <GlassInput label="First Name" defaultValue="Alex" />
-          <GlassInput label="Last Name" defaultValue="Chen" />
-          <GlassInput label="Email Address" type="email" defaultValue="alex@acmefintech.com" className="sm:col-span-2" />
+          <GlassInput name="first_name" label="First Name" value={profile.first_name || ''} onChange={handleChange} />
+          <GlassInput name="last_name" label="Last Name" value={profile.last_name || ''} onChange={handleChange} />
+          <GlassInput name="email" label="Email Address" type="email" value={profile.email || ''} onChange={handleChange} className="sm:col-span-2" />
         </div>
         <div className="pt-2 flex justify-end">
-          <Button size="sm">Save Changes</Button>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </div>
       </GlassCard>
 
       <GlassCard className="space-y-6">
         <h3 className="font-semibold" style={{ color: "var(--color-navy)" }}>Company Profile</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <GlassInput label="Company Name" defaultValue="Acme Fintech Ltd" className="sm:col-span-2" />
-          <GlassInput label="Industry" defaultValue="Financial Services" disabled />
-          <GlassInput label="Region" defaultValue="North America" disabled />
+          <GlassInput name="company_name" label="Company Name" value={profile.company_name || ''} onChange={handleChange} className="sm:col-span-2" />
+          <GlassInput label="Industry" defaultValue="Technology" disabled />
+          <GlassInput label="Plan Tier" value={profile.plan_tier || 'free'} disabled />
         </div>
         <div className="pt-2 flex justify-end">
-          <Button size="sm">Update Company</Button>
+          <Button size="sm" onClick={handleSave} disabled={saving}>
+            {saving ? 'Saving...' : 'Update Company'}
+          </Button>
         </div>
       </GlassCard>
 

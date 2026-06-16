@@ -1,15 +1,29 @@
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { StatusPill } from "@/components/ui/StatusPill";
 import { ArrowRight } from "lucide-react";
+import { fetchApi } from "@/lib/api";
 
-const ASSESSMENTS = [
-  { id: "1", company: "Acme Fintech Ltd", industry: "Financial Services", status: "completed" as const, date: "Jun 12, 2026", roi: "142%" },
-  { id: "2", company: "Nova Healthcare", industry: "Healthcare", status: "active" as const, date: "Jun 10, 2026", roi: "--" },
-  { id: "3", company: "Apex Manufacturing", industry: "Manufacturing", status: "pending" as const, date: "Jun 8, 2026", roi: "--" },
-];
+interface AssessmentItem {
+  id: string;
+  company: string;
+  industry: string;
+  status: 'completed' | 'active' | 'pending' | 'error';
+  date: string;
+  roi: string;
+}
 
 export function RecentAssessments() {
+  const [assessments, setAssessments] = useState<AssessmentItem[]>([]);
+
+  useEffect(() => {
+    fetchApi('/api/assessments')
+      .then(res => setAssessments(res.slice(0, 3)))
+      .catch(console.error);
+  }, []);
+
+  if (assessments.length === 0) return <GlassCard className="h-64 animate-pulse"><div /></GlassCard>;
   return (
     <GlassCard>
       <div className="flex items-center justify-between mb-4">
@@ -36,7 +50,7 @@ export function RecentAssessments() {
             </tr>
           </thead>
           <tbody>
-            {ASSESSMENTS.map((a) => (
+            {assessments.map((a) => (
               <tr key={a.id} className="border-b border-[rgba(180,195,220,0.1)] last:border-0">
                 <td className="py-3 pr-4">
                   <Link

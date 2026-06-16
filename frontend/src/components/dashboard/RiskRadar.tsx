@@ -1,12 +1,13 @@
 "use client";
 
-const RISKS = [
-  { label: "Technical", score: 40, stripeStr: "repeating-linear-gradient(45deg, #3B82F6, #3B82F6 2px, #60A5FA 2px, #60A5FA 6px)" },
-  { label: "Financial", score: 30, stripeStr: "repeating-linear-gradient(45deg, #10B981, #10B981 2px, #34D399 2px, #34D399 6px)" },
-  { label: "Talent", score: 75, stripeStr: "repeating-linear-gradient(45deg, #EF4444, #EF4444 2px, #F87171 2px, #F87171 6px)" },
-  { label: "Regulatory", score: 20, stripeStr: "repeating-linear-gradient(45deg, #8B5CF6, #8B5CF6 2px, #A78BFA 2px, #A78BFA 6px)" },
-  { label: "Market", score: 15, stripeStr: "repeating-linear-gradient(45deg, #F59E0B, #F59E0B 2px, #FBBF24 2px, #FBBF24 6px)" },
-];
+import { useState, useEffect } from "react";
+import { fetchApi } from "@/lib/api";
+
+interface RiskItem {
+  label: string;
+  score: number;
+  stripeStr: string;
+}
 
 function getRiskLevel(score: number) {
   if (score >= 60) return { text: "HIGH", color: "var(--color-danger)" };
@@ -15,9 +16,19 @@ function getRiskLevel(score: number) {
 }
 
 export function RiskRadar() {
+  const [risks, setRisks] = useState<RiskItem[]>([]);
+
+  useEffect(() => {
+    fetchApi('/api/dashboard/risks')
+      .then(res => setRisks(res))
+      .catch(console.error);
+  }, []);
+
+  if (risks.length === 0) return <div className="flex flex-col gap-4 p-4 animate-pulse h-48 bg-gray-50/50 rounded-xl" />;
+
   return (
     <div className="flex flex-col gap-4 p-4">
-      {RISKS.map((risk) => {
+      {risks.map((risk) => {
         const level = getRiskLevel(risk.score);
         return (
           <div key={risk.label} className="flex items-center gap-3">
