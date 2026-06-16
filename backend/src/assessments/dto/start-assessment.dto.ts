@@ -6,9 +6,9 @@ export class StartAssessmentDto {
 
   @IsOptional()
   @IsString()
-  industry?: string;
+  department?: string;
 
   @IsOptional()
   @IsString()
-  company_name?: string;
+  project_name?: string;
 }

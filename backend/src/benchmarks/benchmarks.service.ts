@@ -21,4 +21,17 @@ export class BenchmarksService {
 
     return benchmarks;
   }
+
+  async getUseCases() {
+    const benchmarks = await this.prisma.benchmark.findMany();
+    
+    return benchmarks.map((b, idx) => ({
+      id: b.id,
+      title: b.use_case,
+      category: b.industry,
+      impact: 'High', // Mock derived
+      cost: 'Medium', // Mock derived
+      desc: b.company_size // Seed script hack stored desc in company_size
+    }));
+  }
 }

@@ -57,14 +57,32 @@ export class LlmService {
   }
 
   private async callGemini(messages: any[], isReportGeneration: boolean): Promise<string> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    
-    // Gemini handles system instructions differently (often grouped or in a specific format)
-    // We will concatenate the context for simplicity
-    const prompt = messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n');
-    
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    const systemMsg = messages.find(m => m.role === 'system')?.content;
+    const model = this.genAI.getGenerativeModel({ 
+      model: 'gemini-1.5-flash',
+      ...(systemMsg && { systemInstruction: systemMsg })
+    });
+
+    if (isReportGeneration) {
+      const prompt = messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n');
+      const result = await model.generateContent(prompt);
+      return result.response.text();
+    }
+
+    // Filter out system message for history
+    const chatMsgs = messages.filter(m => m.role !== 'system');
+    if (chatMsgs.length === 0) return "";
+
+    const lastMessage = chatMsgs[chatMsgs.length - 1];
+    const historyMsgs = chatMsgs.slice(0, -1);
+
+    const history = historyMsgs.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.content }]
+    }));
+
+    const chat = model.startChat({ history });
+    const result = await chat.sendMessage(lastMessage.content);
+    return result.response.text();
   }
 }

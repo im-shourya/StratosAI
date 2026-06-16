@@ -12,6 +12,7 @@ import { VendorsModule } from './vendors/vendors.module';
 import { ChatModule } from './chat/chat.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { MlIntegrationModule } from './ml-integration/ml-integration.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import 'dotenv/config';
 
 @Module({
@@ -26,6 +27,7 @@ import 'dotenv/config';
     ChatModule,
     ConversationsModule,
     MlIntegrationModule,
+    DashboardModule,
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/stratosai'),
   ],
   controllers: [AppController],
