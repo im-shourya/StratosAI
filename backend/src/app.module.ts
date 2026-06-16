@@ -9,6 +9,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports/reports.module';
 import { BenchmarksModule } from './benchmarks/benchmarks.module';
 import { VendorsModule } from './vendors/vendors.module';
+import { ChatModule } from './chat/chat.module';
+import { ConversationsModule } from './conversations/conversations.module';
+import { MlIntegrationModule } from './ml-integration/ml-integration.module';
 import 'dotenv/config';
 
 @Module({
@@ -20,6 +23,9 @@ import 'dotenv/config';
     ReportsModule,
     BenchmarksModule,
     VendorsModule,
+    ChatModule,
+    ConversationsModule,
+    MlIntegrationModule,
     MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/stratosai'),
   ],
   controllers: [AppController],

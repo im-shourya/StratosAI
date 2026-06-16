@@ -122,14 +122,20 @@ export class AssessmentsService {
         this.prisma.prediction.create({
           data: {
             assessment_id: assessment.id,
-            roi_12m: mlResults.roi?.roi_12m || 0,
-            roi_36m: mlResults.roi?.roi_36m || 0,
-            success_prob: mlResults.success_probability || 0,
-            maturity_score: mlResults.maturity?.maturity_tier || 1,
-            risk_technical: mlResults.risk_scores?.technical || 0,
-            risk_financial: mlResults.risk_scores?.financial || 0,
-            risk_talent: mlResults.risk_scores?.talent || 0,
-            risk_regulatory: mlResults.risk_scores?.regulatory || 0,
+            annual_revenue_impact: mlResults.annualRevenueImpact || 0,
+            quarterly_revenue_impact: mlResults.quarterlyRevenueImpact || 0,
+            productivity_gain_pct: mlResults.productivityGainPct || 0,
+            roi_percentage: mlResults.roiPercentage || 0,
+            risk_score: mlResults.riskScore || 0,
+            transformation_score: mlResults.transformationScore || 0,
+            readiness_level: mlResults.readinessLevel || 'LOW',
+            maturity_tier: mlResults.maturityTier || 1,
+            peer_percentile: mlResults.peerPercentile || 0,
+            risk_technical: mlResults.riskTechnical || 0,
+            risk_financial: mlResults.riskFinancial || 0,
+            risk_talent: mlResults.riskTalent || 0,
+            risk_regulatory: mlResults.riskRegulatory || 0,
+            risk_market: mlResults.riskMarket || 0,
             model_version: '1.0.0'
           }
         }),
