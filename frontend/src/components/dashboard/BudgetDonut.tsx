@@ -11,14 +11,18 @@ interface BudgetItem {
   color: string;
 }
 
-export function BudgetDonut() {
-  const [data, setData] = useState<BudgetItem[]>([]);
+export function BudgetDonut({ initialData }: { initialData?: BudgetItem[] }) {
+  const [data, setData] = useState<BudgetItem[]>(initialData || []);
 
   useEffect(() => {
-    fetchApi('/api/dashboard/budget')
-      .then(res => setData(res))
-      .catch(console.error);
-  }, []);
+    if (!initialData) {
+      fetchApi('/api/dashboard/budget')
+        .then(res => setData(res))
+        .catch(console.error);
+    } else {
+      setData(initialData);
+    }
+  }, [initialData]);
 
   const total = data.reduce((sum, d) => sum + d.value, 0);
 
