@@ -245,15 +245,10 @@ export default function LandingPage() {
             </div>
           </div>
           
-          <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-500 font-medium">
+          <div className="pt-8 border-t border-gray-100 flex flex-col md:flex-row justify-center items-center gap-4">
+            <p className="text-sm text-gray-500 font-medium text-center">
               © {new Date().getFullYear()} StratosAI. All rights reserved.
             </p>
-            <div className="flex gap-6">
-              <Link href="#" className="text-gray-400 hover:text-black transition-colors">Twitter</Link>
-              <Link href="#" className="text-gray-400 hover:text-black transition-colors">LinkedIn</Link>
-              <Link href="#" className="text-gray-400 hover:text-black transition-colors">GitHub</Link>
-            </div>
           </div>
         </div>
       </footer>
