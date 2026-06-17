@@ -40,12 +40,8 @@ A design proposal for integrating the trained models into a **FastAPI** applicat
 ## Outcomes
 
 * **Data Readiness:** The dataset was successfully cleaned, transformed, and enriched with engineered features, resulting in a comprehensive feature set for model training.
-* **High-Accuracy ROI Prediction:** The `RandomForestRegressor` achieved excellent predictive performance on the test set:
-  * **R-squared ($R^2$):** 0.9962 *(indicating the model can very accurately predict ROI based on the given company characteristics)*
-  * **MAE:** 0.0112
-  * **MSE:** 0.0010
-  * **RMSE:** 0.0308
-* **Key ROI Drivers Identified:** Feature importance analysis revealed that `revenue_impact`, `ai_investment_usd`, and `cost_savings` are the most significant factors influencing ROI, followed by `industry_Technology` and `ai_adoption_level`.
+* **ROI Prediction (Corrected):** The initial `RandomForestRegressor` reported an $R^2$ of 0.9962. However, this was caused by **data leakage** — the ROI formula components (`revenue_impact`, `cost_savings`, `ai_investment_usd`) were left in the feature set, allowing the model to trivially reconstruct the formula. After removing these leaked features, the model achieves realistic performance that reflects genuine predictive signal from operational features (e.g., AI maturity, training hours, adoption level).
+* **Key ROI Drivers Identified:** After removing leaked formula components, feature importance analysis reveals that operational factors such as `ai_maturity_score`, `employee_ai_training_hours`, `ai_adoption_level`, `automation_rate`, and `industry` are the genuine drivers of ROI prediction.
 * **Actionable Company Segmentation:** K-Means clustering identified 4 distinct company segments (e.g., *"Emerging Adopters"*, *"High-Growth AI Leaders"*, *"Cautious Explorers"*, *"Intermediate Performers"*), each with unique profiles. The **Silhouette Score** for the clustering was 0.1221, suggesting reasonable separation between clusters.
 * **Tailored Recommendation Framework:** A robust framework for generating strategic advice was established, combining quantitative predictions (ROI) with qualitative insights from cluster analysis and LLM-driven contextualization.
 * **Scalable API Design:** A FastAPI-based API structure was proposed, ensuring the solution can be seamlessly integrated into a larger application for real-time predictions and recommendations.

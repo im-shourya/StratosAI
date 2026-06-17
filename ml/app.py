@@ -91,6 +91,10 @@ def _build_features(payload: dict, for_revenue: bool) -> pd.DataFrame:
     return engineer_features(row, for_revenue_model=for_revenue)
 
 
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"message": "StratosAI ML Engine is running successfully on Hugging Face!", "status": "active"}), 200
+
 # ─────────────────────────────────────────────────────────────────
 #  GET /ml/health
 # ─────────────────────────────────────────────────────────────────
