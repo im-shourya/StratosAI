@@ -6,6 +6,7 @@ RUN apk add --no-cache python3 make g++
 WORKDIR /app
 
 ENV NODE_ENV=production
+ENV PORT=8080
 
 # 1. Copy package files to install dependencies
 COPY package.json package-lock.json ./
