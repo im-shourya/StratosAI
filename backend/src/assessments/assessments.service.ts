@@ -140,6 +140,7 @@ export class AssessmentsService {
       // Call ML Integration
       const features = {
         industry: assessment.user?.industry || 'Unknown',
+        country: assessment.user?.country || 'US',
         budget: assessment.ai_budget,
         maturity: assessment.ai_maturity,
         ...assessment.extracted_data

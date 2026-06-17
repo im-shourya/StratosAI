@@ -156,8 +156,18 @@ def build_inference_row(payload: dict) -> pd.DataFrame:
     industry = payload.get("industry", "Technology")
     year     = int(payload.get("year", 2025))
 
+    country  = payload.get("country", "US")
+
     ai_adoption_raw = float(payload.get("ai_adoption_level", 0.5))
     ai_adoption_int = int(min(5, max(1, round(ai_adoption_raw * 5))))
+
+    # Map country codes to approximate dataset weights for inference
+    country_weights = {
+        "US": 2500, "CN": 2200, "GB": 1800, "DE": 1700, 
+        "JP": 1600, "IN": 1500, "FR": 1400, "CA": 1300,
+        "AU": 1200, "BR": 1100
+    }
+    encoded_country = country_weights.get(country, 1000)
 
     row = {
         "investment_amount":       float(payload.get("ai_investment_usd", 1_000_000)),
@@ -169,7 +179,7 @@ def build_inference_row(payload: dict) -> pd.DataFrame:
         "num_ai_deployments":      int(payload.get("num_deployments", 10)),
         "industry_encoded":        INDUSTRY_ORDER.index(industry)
                                    if industry in INDUSTRY_ORDER else len(INDUSTRY_ORDER),
-        "country_encoded":         1000,  # neutral fallback at inference time
+        "country_encoded":         encoded_country,
         "years_since_2015":        year - 2015,
     }
     return pd.DataFrame([row])
