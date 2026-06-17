@@ -37,9 +37,9 @@ export default function ReportPage() {
   if (!data) return <div className="max-w-6xl mx-auto p-12 text-center text-gray-500">Failed to load report.</div>;
 
   const p = data.prediction || {};
-  const roi = p.roi_percentage ? `${p.roi_percentage}%` : "--";
-  const cost = p.annual_net_benefit ? `$${(p.annual_net_benefit / 1000).toFixed(0)}k` : "--";
-  const time = p.payback_months ? `${p.payback_months.toFixed(1)} mo` : "--";
+  const roi = p.roi_percentage ? `${Number(p.roi_percentage).toFixed(1)}%` : "--";
+  const cost = p.annual_net_benefit ? `$${(Number(p.annual_net_benefit) / 1000).toFixed(0)}k` : "--";
+  const time = p.payback_months ? `${Number(p.payback_months).toFixed(1)} mo` : "--";
   
   // Format date
   const dateStr = new Date(data.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
