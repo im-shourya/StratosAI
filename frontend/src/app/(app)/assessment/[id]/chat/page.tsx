@@ -22,7 +22,7 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [questionCount, setQuestionCount] = useState(0);
-  const totalQuestions = 5; 
+  const totalQuestions = 7; 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<Socket | null>(null);
   
