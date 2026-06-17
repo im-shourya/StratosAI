@@ -24,8 +24,7 @@ from sklearn.metrics import (
     roc_auc_score, f1_score, classification_report,
     silhouette_score,
 )
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.multioutput import MultiOutputClassifier
+
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBRegressor, XGBClassifier
@@ -265,119 +264,126 @@ def train_success_predictor(df: pd.DataFrame):
 
 
 # ─────────────────────────────────────────────────────────────────
-#  4. RISKY RADAR (MultiOutput RandomForest)
+#  4. RISKY RADAR (Isolation Forest — Unsupervised Anomaly Detection)
+#
+#  The previous approach derived risk labels deterministically from
+#  the same features used for training (e.g., talent risk = low
+#  training hours, then trained a classifier to predict that from
+#  training hours). This caused perfect F1 scores (1.0) due to
+#  data leakage / circular label definition.
+#
+#  New approach: One IsolationForest per risk domain, each trained
+#  on semantically relevant features. Anomaly scores (0–100) are
+#  used as risk scores. No self-referential labels.
 # ─────────────────────────────────────────────────────────────────
 
 def train_risk_radar(df: pd.DataFrame):
     """
-    Build 5 domain risk scores (Technical, Financial, Talent,
-    Regulatory, Market) as derived targets from the dataset,
-    then train a MultiOutputClassifier on them.
+    Train 5 separate IsolationForest models — one per risk domain.
 
-    Risk score derivation (all using dataset columns):
-      Technical   = HIGH if ai_maturity_score < 4 AND num_deployments < 10
-      Financial   = HIGH if investment_amount > 75th percentile
-                          AND revenue_impact < 25th percentile
-      Talent      = HIGH if employee_training_hours < 25th percentile
-      Regulatory  = HIGH if industry in regulated set AND maturity < 4
-      Market      = HIGH if automation_rate < 0.25
+    Each domain uses a curated subset of features that are
+    semantically relevant to that domain but do NOT create a
+    trivial deterministic relationship.
+
+    Domain → Features:
+      Technical:  adoption, training, years_since_2015, industry
+      Financial:  investment_amount, investment_per_deployment, years_since_2015
+      Talent:     adoption, automation_rate, num_deployments, industry
+      Regulatory: industry_encoded, adoption, years_since_2015
+      Market:     adoption, training, investment_amount, num_deployments, years_since_2015
     """
+    from sklearn.ensemble import IsolationForest
+
     print("\n" + "="*55)
-    print("  MODEL 4: Risky Radar (MultiOutput RandomForest)")
+    print("  MODEL 4: Risky Radar (Isolation Forest — Unsupervised)")
     print("="*55)
 
-    # ── Derive risk labels (0=LOW, 1=MED, 2=HIGH) ───────────────
-    inv_p75    = df["investment_amount"].quantile(0.75)
-    rev_p25    = df["revenue_impact"].quantile(0.25)
-    train_p25  = df["employee_training_hours"].quantile(0.25)
-    REGULATED  = {"Financial Services", "Healthcare", "Energy"}
+    X_eng = engineer_features(df.copy(), for_revenue_model=False)
 
-    def tech_risk(row):
-        if row["ai_maturity_score"] < 3 and row["num_ai_deployments"] < 8:
-            return 2
-        elif row["ai_maturity_score"] < 5:
-            return 1
-        return 0
+    # Feature sets per domain — intentionally exclude the "obvious"
+    # feature that would trivially define risk for that domain.
+    DOMAIN_FEATURES = {
+        "technical": [
+            "ai_adoption_level", "employee_training_hours",
+            "years_since_2015", "industry_encoded",
+            "investment_per_deployment", "training_adoption",
+        ],
+        "financial": [
+            "investment_amount", "investment_per_deployment",
+            "years_since_2015", "ai_adoption_level",
+            "automation_maturity",
+        ],
+        "talent": [
+            "ai_adoption_level", "automation_rate",
+            "num_ai_deployments", "industry_encoded",
+            "automation_maturity",
+        ],
+        "regulatory": [
+            "industry_encoded", "ai_adoption_level",
+            "years_since_2015", "num_ai_deployments",
+        ],
+        "market": [
+            "ai_adoption_level", "employee_training_hours",
+            "investment_amount", "num_ai_deployments",
+            "years_since_2015", "training_per_deployment",
+        ],
+    }
 
-    def fin_risk(row):
-        if row["investment_amount"] > inv_p75 and row["revenue_impact"] < rev_p25:
-            return 2
-        elif row["investment_amount"] > inv_p75:
-            return 1
-        return 0
+    # Collect all unique features used across domains
+    all_features = sorted(set(
+        f for feats in DOMAIN_FEATURES.values() for f in feats
+    ))
 
-    def talent_risk(row):
-        if row["employee_training_hours"] < train_p25:
-            return 2
-        elif row["employee_training_hours"] < train_p25 * 2:
-            return 1
-        return 0
+    domain_models  = {}
+    domain_scalers = {}
+    metrics        = {}
 
-    def reg_risk(row):
-        if row["industry"] in REGULATED and row["ai_maturity_score"] < 5:
-            return 2
-        elif row["industry"] in REGULATED:
-            return 1
-        return 0
+    for domain, feats in DOMAIN_FEATURES.items():
+        avail = [c for c in feats if c in X_eng.columns]
+        X_domain = X_eng[avail].copy()
 
-    def market_risk(row):
-        if row["automation_rate"] < 0.20:
-            return 2
-        elif row["automation_rate"] < 0.40:
-            return 1
-        return 0
+        # Scale features per domain for stable anomaly scoring
+        scaler = StandardScaler()
+        X_scaled = scaler.fit_transform(X_domain)
 
-    print("  Deriving risk labels...")
-    df["risk_technical"]  = df.apply(tech_risk, axis=1)
-    df["risk_financial"]  = df.apply(fin_risk, axis=1)
-    df["risk_talent"]     = df.apply(talent_risk, axis=1)
-    df["risk_regulatory"] = df.apply(reg_risk, axis=1)
-    df["risk_market"]     = df.apply(market_risk, axis=1)
+        iso = IsolationForest(
+            n_estimators=200,
+            contamination=0.15,   # ~15% of companies are "high risk"
+            random_state=42,
+            n_jobs=1,
+        )
+        iso.fit(X_scaled)
 
-    RISK_TARGETS = ["risk_technical", "risk_financial", "risk_talent",
-                    "risk_regulatory", "risk_market"]
-    RISK_FEATURES = [
-        "investment_amount", "ai_adoption_level", "ai_maturity_score",
-        "automation_rate", "employee_training_hours", "num_ai_deployments",
-        "industry_encoded", "years_since_2015",
-        "investment_per_deployment", "training_per_deployment",
-        "investment_maturity", "automation_maturity", "training_adoption",
-    ]
+        # Compute anomaly scores: decision_function returns negative
+        # for anomalies, positive for inliers. We invert and scale to 0–100.
+        raw_scores = iso.decision_function(X_scaled)
+        # Lower decision_function → more anomalous → higher risk
+        min_s, max_s = raw_scores.min(), raw_scores.max()
+        risk_scores = (1.0 - (raw_scores - min_s) / (max_s - min_s + 1e-8)) * 100
 
-    X_raw = engineer_features(df.copy(), for_revenue_model=False)
-    avail = [c for c in RISK_FEATURES if c in X_raw.columns]
-    X     = X_raw[avail]
-    y     = df[RISK_TARGETS]
+        mean_risk = float(risk_scores.mean())
+        std_risk  = float(risk_scores.std())
+        metrics[f"mean_risk_{domain}"] = round(mean_risk, 2)
+        metrics[f"std_risk_{domain}"]  = round(std_risk, 2)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.20, random_state=42
-    )
-    print(f"  Train: {X_train.shape[0]:,} | Test: {X_test.shape[0]:,}")
+        domain_models[domain]  = iso
+        domain_scalers[domain] = scaler
 
-    base = RandomForestClassifier(
-        n_estimators=200, max_depth=8, random_state=42, n_jobs=1
-    )
-    model = MultiOutputClassifier(base)
-    model.fit(X_train, y_train)
+        print(f"     {domain.title():>12}: mean_risk={mean_risk:.1f}  "
+              f"std={std_risk:.1f}  features={len(avail)}")
 
-    # Per-domain F1
-    y_pred = model.predict(X_test)
-    domains = ["Technical", "Financial", "Talent", "Regulatory", "Market"]
-    metrics = {}
-    print(f"\n  ── Risky Radar F1 per domain ──")
-    for i, dom in enumerate(domains):
-        f1 = round(float(f1_score(y_test.iloc[:, i], y_pred[:, i],
-                                   average="weighted")), 4)
-        metrics[f"f1_{dom.lower()}"] = f1
-        print(f"     {dom}: F1 = {f1}")
+    payload = {
+        "type":           "isolation_forest",
+        "domain_models":  domain_models,
+        "domain_scalers": domain_scalers,
+        "domain_features": DOMAIN_FEATURES,
+        "all_features":   all_features,
+    }
+    joblib.dump(payload, "models/risk_radar.pkl")
+    save_metrics({**metrics, "domain_features": DOMAIN_FEATURES}, "risk_radar")
 
-    joblib.dump({"model": model, "feature_cols": avail}, "models/risk_radar.pkl")
-    save_metrics({**metrics, "feature_cols": avail}, "risk_radar")
-
-    # Remove derived columns from df so they don't contaminate other models
-    df.drop(columns=RISK_TARGETS, inplace=True, errors="ignore")
     print("  ✅ Saved → models/risk_radar.pkl")
-    return model, avail
+    return domain_models, all_features
 
 
 # ─────────────────────────────────────────────────────────────────

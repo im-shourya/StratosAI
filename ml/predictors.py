@@ -258,40 +258,71 @@ def explain_prediction(model, X_single: pd.DataFrame) -> dict:
 
 def predict_risk_scores(risk_model_payload: dict, X: pd.DataFrame) -> dict:
     """
-    Returns 0–100 risk scores per domain using predict_proba.
-    HIGH risk class (index 2) probability × 100 = risk score.
+    Returns 0–100 risk scores per domain.
+
+    Supports two model formats:
+      - "isolation_forest": Per-domain IsolationForest models (v2, no leakage)
+      - Legacy: MultiOutputClassifier (v1, deprecated)
 
     Args:
         risk_model_payload: loaded dict from risk_radar.pkl
-                            {"model": MultiOutputClassifier, "feature_cols": [...]}
         X:                  Engineered single-row DataFrame
     """
-    model     = risk_model_payload["model"]
-    feat_cols = risk_model_payload["feature_cols"]
-    avail     = [c for c in feat_cols if c in X.columns]
-    X_in      = X[avail]
-
     domains = ["technical", "financial", "talent", "regulatory", "market"]
     scores  = {}
 
-    for i, domain in enumerate(domains):
-        estimator   = model.estimators_[i]
-        classes     = list(estimator.classes_)
-        proba       = estimator.predict_proba(X_in)[0]
+    model_type = risk_model_payload.get("type", "legacy")
 
-        # Score = probability of HIGH risk (class 2) × 100
-        if 2 in classes:
-            high_idx = classes.index(2)
-            scores[domain] = round(float(proba[high_idx]) * 100, 1)
-        else:
-            # Fallback: use max probability of non-LOW class
-            non_low_idx = classes.index(1) if 1 in classes else 0
-            scores[domain] = round(float(proba[non_low_idx]) * 100, 1)
+    if model_type == "isolation_forest":
+        # ── New: Isolation Forest per domain ─────────────────────
+        domain_models  = risk_model_payload["domain_models"]
+        domain_scalers = risk_model_payload["domain_scalers"]
+        domain_features = risk_model_payload["domain_features"]
 
-    # Rule override: very low training → force talent risk up
-    training_hrs = X["employee_training_hours"].values[0] if "employee_training_hours" in X.columns else 50
-    if training_hrs < 20:
-        scores["talent"] = max(scores.get("talent", 0), 80.0)
+        for domain in domains:
+            if domain not in domain_models:
+                scores[domain] = 50.0  # neutral fallback
+                continue
+
+            feats  = domain_features[domain]
+            avail  = [c for c in feats if c in X.columns]
+            X_in   = X[avail].copy()
+
+            scaler = domain_scalers[domain]
+            X_scaled = scaler.transform(X_in)
+
+            iso = domain_models[domain]
+            raw_score = float(iso.decision_function(X_scaled)[0])
+
+            # decision_function: more negative = more anomalous = higher risk
+            # Typical range is roughly [-0.5, 0.5] but varies.
+            # We use a sigmoid-like mapping to convert to 0–100:
+            #   risk = 100 / (1 + exp(10 * raw_score))
+            # When raw_score = 0 → risk ≈ 50 (borderline)
+            # When raw_score = -0.3 → risk ≈ 95 (high anomaly)
+            # When raw_score = +0.3 → risk ≈ 5 (normal)
+            import math
+            risk = 100.0 / (1.0 + math.exp(10.0 * raw_score))
+            scores[domain] = round(risk, 1)
+
+    else:
+        # ── Legacy: MultiOutputClassifier (kept for backward compat) ──
+        model     = risk_model_payload["model"]
+        feat_cols = risk_model_payload["feature_cols"]
+        avail     = [c for c in feat_cols if c in X.columns]
+        X_in      = X[avail]
+
+        for i, domain in enumerate(domains):
+            estimator   = model.estimators_[i]
+            classes     = list(estimator.classes_)
+            proba       = estimator.predict_proba(X_in)[0]
+
+            if 2 in classes:
+                high_idx = classes.index(2)
+                scores[domain] = round(float(proba[high_idx]) * 100, 1)
+            else:
+                non_low_idx = classes.index(1) if 1 in classes else 0
+                scores[domain] = round(float(proba[non_low_idx]) * 100, 1)
 
     # Classify each domain
     def label(s):

@@ -1,22 +1,50 @@
 {
-  "f1_technical": 1.0,
-  "f1_financial": 0.991,
-  "f1_talent": 1.0,
-  "f1_regulatory": 0.9828,
-  "f1_market": 1.0,
-  "feature_cols": [
-    "investment_amount",
-    "ai_adoption_level",
-    "ai_maturity_score",
-    "automation_rate",
-    "employee_training_hours",
-    "num_ai_deployments",
-    "industry_encoded",
-    "years_since_2015",
-    "investment_per_deployment",
-    "training_per_deployment",
-    "investment_maturity",
-    "automation_maturity",
-    "training_adoption"
-  ]
+  "mean_risk_technical": 24.6,
+  "std_risk_technical": 14.08,
+  "mean_risk_financial": 20.84,
+  "std_risk_financial": 14.61,
+  "mean_risk_talent": 28.04,
+  "std_risk_talent": 17.43,
+  "mean_risk_regulatory": 29.87,
+  "std_risk_regulatory": 18.58,
+  "mean_risk_market": 24.72,
+  "std_risk_market": 15.32,
+  "domain_features": {
+    "technical": [
+      "ai_adoption_level",
+      "employee_training_hours",
+      "years_since_2015",
+      "industry_encoded",
+      "investment_per_deployment",
+      "training_adoption"
+    ],
+    "financial": [
+      "investment_amount",
+      "investment_per_deployment",
+      "years_since_2015",
+      "ai_adoption_level",
+      "automation_maturity"
+    ],
+    "talent": [
+      "ai_adoption_level",
+      "automation_rate",
+      "num_ai_deployments",
+      "industry_encoded",
+      "automation_maturity"
+    ],
+    "regulatory": [
+      "industry_encoded",
+      "ai_adoption_level",
+      "years_since_2015",
+      "num_ai_deployments"
+    ],
+    "market": [
+      "ai_adoption_level",
+      "employee_training_hours",
+      "investment_amount",
+      "num_ai_deployments",
+      "years_since_2015",
+      "training_per_deployment"
+    ]
+  }
 }
