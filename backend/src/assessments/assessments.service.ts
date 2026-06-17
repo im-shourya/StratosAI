@@ -162,6 +162,20 @@ Return ONLY raw JSON.`;
         assessment.ai_budget = extracted.ai_investment_usd || assessment.ai_budget || 500000;
         assessment.ai_maturity = extracted.ai_maturity_score || assessment.ai_maturity || 3.0;
         assessment.extracted_data = { ...assessment.extracted_data, ...extracted };
+        
+        // Save the newly extracted data to MongoDB and Postgres so the frontend can read it later
+        await this.conversationModel.updateOne(
+          { assessment_id: assessment.id },
+          { $set: { extracted_data: assessment.extracted_data } }
+        );
+        await this.prisma.assessment.update({
+          where: { id: assessment.id },
+          data: {
+            ai_budget: assessment.ai_budget,
+            ai_maturity: assessment.ai_maturity,
+          }
+        });
+
         this.logger.log(`Extracted ML features: ${JSON.stringify(extracted)}`);
       } catch (extractError: any) {
         this.logger.error(`LLM Extraction failed, using defaults. Error: ${extractError.message}`);
@@ -209,9 +223,9 @@ Return ONLY raw JSON.`;
             risk_talent: typeof riskScores.talent === 'object' ? riskScores.talent.score : (riskScores.talent || 0),
             risk_regulatory: typeof riskScores.regulatory === 'object' ? riskScores.regulatory.score : (riskScores.regulatory || 0),
             risk_market: typeof riskScores.market === 'object' ? riskScores.market.score : (riskScores.market || 0),
-            scenario_baseline_roi: scenarios.baseline?.roi_percentage || roi.roi_percentage || 0,
-            scenario_cautious_roi: scenarios.cautious?.roi_percentage || 0,
-            scenario_aggressive_roi: scenarios.aggressive?.roi_percentage || 0,
+            scenario_baseline_roi: scenarios.conservative?.roi_pct || roi.roi_percentage || 0,
+            scenario_cautious_roi: scenarios.cautious?.roi_pct || 0,
+            scenario_aggressive_roi: scenarios.aggressive?.roi_pct || 0,
             board_recommendation: scenarios.board_recommendation || '',
             model_version: '2.0.0',
             predicted_at: new Date()
@@ -234,9 +248,9 @@ Return ONLY raw JSON.`;
             risk_talent: typeof riskScores.talent === 'object' ? riskScores.talent.score : (riskScores.talent || 0),
             risk_regulatory: typeof riskScores.regulatory === 'object' ? riskScores.regulatory.score : (riskScores.regulatory || 0),
             risk_market: typeof riskScores.market === 'object' ? riskScores.market.score : (riskScores.market || 0),
-            scenario_baseline_roi: scenarios.baseline?.roi_percentage || roi.roi_percentage || 0,
-            scenario_cautious_roi: scenarios.cautious?.roi_percentage || 0,
-            scenario_aggressive_roi: scenarios.aggressive?.roi_percentage || 0,
+            scenario_baseline_roi: scenarios.conservative?.roi_pct || roi.roi_percentage || 0,
+            scenario_cautious_roi: scenarios.cautious?.roi_pct || 0,
+            scenario_aggressive_roi: scenarios.aggressive?.roi_pct || 0,
             board_recommendation: scenarios.board_recommendation || '',
             model_version: '2.0.0'
           }
