@@ -263,6 +263,8 @@ export default function ReportPage() {
             </GlassCard>
           </div>
         </div>
+      )}
+
       {/* Maturity */}
       {(activeTab === "maturity" || isExporting) && (
         <div id="pdf-maturity" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
