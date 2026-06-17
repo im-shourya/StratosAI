@@ -137,6 +137,36 @@ export class AssessmentsService {
     const assessment = await this.getAssessment(assessmentId);
 
     try {
+      // 1. Extract features from chat history using LLM
+      try {
+        const chatPrompt = assessment.chat_history.map((m: any) => `${m.role}: ${m.content}`).join('\n');
+        const extractionPrompt = `Given the following chat transcript, extract these values into a strict JSON object:
+- "ai_investment_usd": total AI investment amount in USD (number). If not explicitly mentioned, estimate based on company scale or default to 500000.
+- "ai_maturity_score": AI maturity score from 1.0 to 10.0 (number). Default to 3.0.
+- "automation_rate": estimated automation rate from 0.0 to 1.0 (number). Default to 0.2.
+- "num_deployments": number of existing AI deployments (integer). Default to 1.
+- "employee_training_hrs": hours of training (number). Default to 40.
+
+Chat Transcript:
+${chatPrompt}
+
+Return ONLY raw JSON.`;
+
+        const extractionResult = await this.llmService.generateResponse([
+          { role: 'user', content: extractionPrompt }
+        ], true);
+
+        const cleanJson = extractionResult.replace(/```json/gi, '').replace(/```/g, '').trim();
+        const extracted = JSON.parse(cleanJson);
+        
+        assessment.ai_budget = extracted.ai_investment_usd || assessment.ai_budget || 500000;
+        assessment.ai_maturity = extracted.ai_maturity_score || assessment.ai_maturity || 3.0;
+        assessment.extracted_data = { ...assessment.extracted_data, ...extracted };
+        this.logger.log(`Extracted ML features: ${JSON.stringify(extracted)}`);
+      } catch (extractError: any) {
+        this.logger.error(`LLM Extraction failed, using defaults. Error: ${extractError.message}`);
+      }
+
       // Call ML Integration
       const features = {
         industry: assessment.user?.industry || 'Unknown',
@@ -148,27 +178,42 @@ export class AssessmentsService {
       
       const mlResults = await this.mlIntegration.predictFull(features);
 
+      // Map nested Flask response to flat Prisma fields
+      const roi         = mlResults.roi || {};
+      const prod        = mlResults.productivity || {};
+      const risk        = mlResults.risk || {};
+      const riskScores  = risk.risk_scores || {};
+      const maturity    = mlResults.maturity || {};
+      const scenarios   = mlResults.scenarios || {};
+      const readiness   = mlResults.readiness || {};
+      const tfScore     = mlResults.transformation_score || 0;
+
       // Save ML results to predictions table and update Assessment using a Transaction
       await this.prisma.$transaction([
         this.prisma.prediction.create({
           data: {
             assessment_id: assessment.id,
-            annual_revenue_impact: mlResults.annualRevenueImpact || 0,
-            quarterly_revenue_impact: mlResults.quarterlyRevenueImpact || 0,
-            annual_net_benefit: mlResults.annualNetBenefit || 0,
-            productivity_gain_pct: mlResults.productivityGainPct || 0,
-            roi_percentage: mlResults.roiPercentage || 0,
-            risk_score: mlResults.riskScore || 0,
-            transformation_score: mlResults.transformationScore || 0,
-            readiness_level: mlResults.readinessLevel || 'LOW',
-            maturity_tier: mlResults.maturityTier || 1,
-            peer_percentile: mlResults.peerPercentile || 0,
-            risk_technical: mlResults.riskTechnical || 0,
-            risk_financial: mlResults.riskFinancial || 0,
-            risk_talent: mlResults.riskTalent || 0,
-            risk_regulatory: mlResults.riskRegulatory || 0,
-            risk_market: mlResults.riskMarket || 0,
-            model_version: '1.0.0'
+            annual_revenue_impact: roi.quarterly_revenue_impact ? roi.quarterly_revenue_impact * 4 : 0,
+            quarterly_revenue_impact: roi.quarterly_revenue_impact || 0,
+            annual_net_benefit: roi.annual_net_benefit || 0,
+            productivity_gain_pct: prod.predicted_productivity_gain || 0,
+            roi_percentage: roi.roi_percentage || 0,
+            payback_months: roi.payback_months || 0,
+            risk_score: riskScores.technical?.score || riskScores.technical || 0,
+            transformation_score: tfScore,
+            readiness_level: readiness.readiness_level || 'LOW',
+            maturity_tier: maturity.maturity_tier || 1,
+            peer_percentile: maturity.peer_percentile || 0,
+            risk_technical: typeof riskScores.technical === 'object' ? riskScores.technical.score : (riskScores.technical || 0),
+            risk_financial: typeof riskScores.financial === 'object' ? riskScores.financial.score : (riskScores.financial || 0),
+            risk_talent: typeof riskScores.talent === 'object' ? riskScores.talent.score : (riskScores.talent || 0),
+            risk_regulatory: typeof riskScores.regulatory === 'object' ? riskScores.regulatory.score : (riskScores.regulatory || 0),
+            risk_market: typeof riskScores.market === 'object' ? riskScores.market.score : (riskScores.market || 0),
+            scenario_baseline_roi: scenarios.baseline?.roi_percentage || roi.roi_percentage || 0,
+            scenario_cautious_roi: scenarios.cautious?.roi_percentage || 0,
+            scenario_aggressive_roi: scenarios.aggressive?.roi_percentage || 0,
+            board_recommendation: scenarios.board_recommendation || '',
+            model_version: '2.0.0'
           }
         }),
         this.prisma.assessment.update({
