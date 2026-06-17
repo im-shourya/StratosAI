@@ -1,0 +1,10 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd backend && npm install && npx prisma generate && npx nest build"
+
+[deploy]
+startCommand = "cd backend && node dist/main"
+healthcheckPath = "/api"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
