@@ -81,6 +81,11 @@ export class LlmService {
       parts: [{ text: msg.content }]
     }));
 
+    // Gemini strictly requires the history to start with a 'user' role
+    if (history.length > 0 && history[0].role === 'model') {
+      history.unshift({ role: 'user', parts: [{ text: 'Start conversation' }] });
+    }
+
     const chat = model.startChat({ history });
     const result = await chat.sendMessage(lastMessage.content);
     return result.response.text();
