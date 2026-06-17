@@ -275,7 +275,14 @@ export default function ReportPage() {
               <h3 className="text-h3 font-display font-semibold mb-3 text-[var(--color-navy)]">Peer Comparison</h3>
               <p className="text-body-sm leading-relaxed mb-4 text-[var(--color-text-secondary)]">
                 Your current AI adoption places you in the <strong>{Number(p.peer_percentile || 0).toFixed(1)}th percentile</strong> of your industry peers. 
-                Organizations at Level {p.maturity_tier || 1} typically focus on foundational data capabilities and isolated proof-of-concepts.
+                {(() => {
+                  const t = p.maturity_tier || 1;
+                  if (t === 1) return " Organizations at Level 1 typically focus on initial exploration and defining a clear AI strategy without active deployments.";
+                  if (t === 2) return " Organizations at Level 2 typically focus on foundational data capabilities and isolated proof-of-concepts.";
+                  if (t === 3) return " Organizations at Level 3 have operationalized AI in specific departments and are establishing formal governance.";
+                  if (t === 4) return " Organizations at Level 4 are actively scaling AI across the enterprise to drive core business value.";
+                  return " Organizations at Level 5 are industry leaders, using AI continuously to redefine their business models.";
+                })()}
               </p>
             </GlassCard>
           </div>
@@ -289,21 +296,37 @@ export default function ReportPage() {
           <GlassCard>
             <h3 className="text-h3 font-display font-semibold mb-4 text-[var(--color-navy)]">Recommended Timeline</h3>
             <div className="relative border-l-2 border-[var(--color-primary)] ml-3 space-y-8 py-2">
-               <div className="relative pl-6">
-                 <div className="absolute w-4 h-4 rounded-full bg-[var(--color-primary)] -left-[9px] top-1 shadow-[0_0_0_4px_rgba(41,128,185,0.2)]"></div>
-                 <h4 className="font-bold text-[var(--color-navy)]">Phase 1: Foundation (Months 1-3)</h4>
-                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">Mitigate primary risk vectors and establish pilot KPIs.</p>
-               </div>
-               <div className="relative pl-6">
-                 <div className="absolute w-4 h-4 rounded-full bg-gray-300 border-2 border-white -left-[9px] top-1"></div>
-                 <h4 className="font-bold text-[var(--color-navy)]">Phase 2: Pilot Deployment (Months 4-6)</h4>
-                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">Rollout to initial department and monitor early ROI metrics.</p>
-               </div>
-               <div className="relative pl-6">
-                 <div className="absolute w-4 h-4 rounded-full bg-gray-300 border-2 border-white -left-[9px] top-1"></div>
-                 <h4 className="font-bold text-[var(--color-navy)]">Phase 3: Scale (Months 7-12)</h4>
-                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">Enterprise-wide adoption to capture projected annual net benefit.</p>
-               </div>
+               {(() => {
+                 const rec = p.board_recommendation || "";
+                 let phases = [];
+                 if (rec === "APPROVE AGGRESSIVE EXPANSION") {
+                   phases = [
+                     { title: "Phase 1: Accelerated Pilot (Months 1-2)", desc: "Fast-track initial deployment leveraging existing data infrastructure." },
+                     { title: "Phase 2: Core Integration (Months 3-5)", desc: "Embed AI into primary workflows and capture early ROI." },
+                     { title: "Phase 3: Full Scale (Months 6-9)", desc: "Enterprise-wide rollout and continuous optimization." }
+                   ];
+                 } else if (rec === "DELAY EXPANSION") {
+                   phases = [
+                     { title: "Phase 1: Risk Mitigation (Months 1-4)", desc: "Address primary risks and establish robust data governance." },
+                     { title: "Phase 2: Controlled Pilot (Months 5-8)", desc: "Deploy in a strictly isolated environment with tight KPI monitoring." },
+                     { title: "Phase 3: Gradual Expansion (Months 9-18)", desc: "Slow, methodical rollout across departments based on strict success criteria." }
+                   ];
+                 } else {
+                   phases = [
+                     { title: "Phase 1: Foundation (Months 1-3)", desc: "Mitigate primary risk vectors and establish pilot KPIs." },
+                     { title: "Phase 2: Pilot Deployment (Months 4-6)", desc: "Rollout to initial department and monitor early ROI metrics." },
+                     { title: "Phase 3: Scale (Months 7-12)", desc: "Enterprise-wide adoption to capture projected annual net benefit." }
+                   ];
+                 }
+
+                 return phases.map((phase, i) => (
+                   <div key={i} className="relative pl-6">
+                     <div className={`absolute w-4 h-4 rounded-full -left-[9px] top-1 ${i === 0 ? 'bg-[var(--color-primary)] shadow-[0_0_0_4px_rgba(41,128,185,0.2)]' : 'bg-gray-300 border-2 border-white'}`}></div>
+                     <h4 className="font-bold text-[var(--color-navy)]">{phase.title}</h4>
+                     <p className="text-sm text-[var(--color-text-secondary)] mt-1">{phase.desc}</p>
+                   </div>
+                 ));
+               })()}
             </div>
           </GlassCard>
         </div>
