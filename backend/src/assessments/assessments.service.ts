@@ -99,11 +99,23 @@ export class AssessmentsService {
       orderBy: { created_at: 'desc' }
     });
 
+    const assessmentIds = assessments.map(a => a.id);
+    const conversations = await this.conversationModel.find({ assessment_id: { $in: assessmentIds } });
+
     return assessments.map(a => {
       let progress = 0;
       if (a.status === 'completed' || a.status === 'COMPLETED') progress = 100;
       else if (a.status === 'error' || a.status === 'FAILED') progress = 40;
-      else progress = 65;
+      else {
+        const conversation = conversations.find(c => c.assessment_id === a.id);
+        if (conversation && conversation.messages) {
+          const assistantMsgs = conversation.messages.filter((m: any) => m.role === 'assistant').length;
+          // We increased the frontend chat limit to 7 questions
+          progress = Math.min(95, Math.round((assistantMsgs / 7) * 100));
+        } else {
+          progress = 5;
+        }
+      }
 
       return {
         id: a.id,
