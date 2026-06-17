@@ -71,18 +71,22 @@ export class AuthService {
       first_name: user.first_name,
       last_name: user.last_name,
       company_name: user.company_name,
+      country: user.country,
+      main_market_country: user.main_market_country,
       plan_tier: user.plan_tier
     };
   }
 
-  async updateProfile(userId: string, data: { first_name?: string; last_name?: string; email?: string; company_name?: string }) {
+  async updateProfile(userId: string, data: { first_name?: string; last_name?: string; email?: string; company_name?: string; country?: string; main_market_country?: string }) {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         first_name: data.first_name,
         last_name: data.last_name,
         email: data.email,
-        company_name: data.company_name
+        company_name: data.company_name,
+        country: data.country,
+        main_market_country: data.main_market_country
       }
     });
 
@@ -92,6 +96,8 @@ export class AuthService {
       first_name: updated.first_name,
       last_name: updated.last_name,
       company_name: updated.company_name,
+      country: updated.country,
+      main_market_country: updated.main_market_country,
       plan_tier: updated.plan_tier
     };
   }

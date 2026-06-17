@@ -14,8 +14,10 @@ model User {
   last_name     String?      @db.VarChar(100)
   company_name  String       @db.VarChar(200)
   industry      String?      @db.VarChar(100)
-  company_size  String?      @db.VarChar(100)
-  plan_tier     String       @default("free") @db.VarChar // enum replacement
+  company_size        String?      @db.VarChar(100)
+  country             String?      @db.VarChar(100)
+  main_market_country String?      @db.VarChar(100)
+  plan_tier           String       @default("free") @db.VarChar // enum replacement
   created_at    DateTime     @default(now()) @db.Timestamp(6)
   updated_at    DateTime     @updatedAt @db.Timestamp(6)
   
