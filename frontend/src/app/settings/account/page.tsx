@@ -5,6 +5,8 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { GlassInput } from "@/components/ui/GlassInput";
 import { Button } from "@/components/ui/Button";
 import { fetchApi } from "@/lib/api";
+import { GlassSelect } from "@/components/ui/GlassInput";
+import { COUNTRIES, MAIN_MARKET_COUNTRIES } from "@/lib/countries";
 
 interface UserProfile {
   id: string;
@@ -12,6 +14,8 @@ interface UserProfile {
   first_name: string;
   last_name: string;
   company_name: string;
+  country: string;
+  main_market_country: string;
   plan_tier: string;
 }
 
@@ -47,7 +51,9 @@ export default function AccountSettings() {
           first_name: profile.first_name,
           last_name: profile.last_name,
           email: profile.email,
-          company_name: profile.company_name
+          company_name: profile.company_name,
+          country: profile.country,
+          main_market_country: profile.main_market_country
         })
       });
       alert('Profile updated successfully!');
@@ -87,6 +93,8 @@ export default function AccountSettings() {
         <h3 className="font-semibold" style={{ color: "var(--color-navy)" }}>Company Profile</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <GlassInput name="company_name" label="Company Name" value={profile.company_name || ''} onChange={handleChange} className="sm:col-span-2" />
+          <GlassSelect name="country" label="Company Country" value={profile.country || 'US'} onChange={handleChange as any} options={COUNTRIES} />
+          <GlassSelect name="main_market_country" label="Main Market" value={profile.main_market_country || 'Global'} onChange={handleChange as any} options={MAIN_MARKET_COUNTRIES} />
           <GlassInput label="Industry" defaultValue="Technology" disabled />
           <GlassInput label="Plan Tier" value={profile.plan_tier || 'free'} disabled />
         </div>
