@@ -58,48 +58,88 @@ export class LlmService {
 
   private async callGemini(messages: any[], isReportGeneration: boolean): Promise<string> {
     const systemMsg = messages.find(m => m.role === 'system')?.content;
-    const model = this.genAI.getGenerativeModel({ 
-      model: 'gemini-2.5-flash',
-      ...(systemMsg && { systemInstruction: systemMsg })
-    });
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    let lastError: any;
+    const maxRetries = 3;
+    let baseDelay = 1000;
 
-    if (isReportGeneration) {
-      const prompt = messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n');
-      const result = await model.generateContent(prompt);
-      return result.response.text();
-    }
+    for (const modelName of modelsToTry) {
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        try {
+          const model = this.genAI.getGenerativeModel({ 
+            model: modelName,
+            ...(systemMsg && { systemInstruction: systemMsg })
+          });
 
-    // Filter out system message for history
-    const chatMsgs = messages.filter(m => m.role !== 'system');
-    if (chatMsgs.length === 0) return "";
+          if (isReportGeneration) {
+            const prompt = messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n');
+            const result = await model.generateContent(prompt);
+            return result.response.text();
+          }
 
-    const lastMessage = chatMsgs[chatMsgs.length - 1];
-    const historyMsgs = chatMsgs.slice(0, -1);
+          // Filter out system message for history
+          const chatMsgs = messages.filter(m => m.role !== 'system');
+          if (chatMsgs.length === 0) return "";
 
-    let history = historyMsgs.map(msg => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }]
-    }));
+          const lastMessage = chatMsgs[chatMsgs.length - 1];
+          const historyMsgs = chatMsgs.slice(0, -1);
 
-    // Gemini strictly requires the history to start with a 'user' role
-    if (history.length > 0 && history[0].role === 'model') {
-      history.unshift({ role: 'user', parts: [{ text: 'Start conversation' }] });
-    }
+          let history = historyMsgs.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          }));
 
-    // Ensure strict alternation between 'user' and 'model'
-    const validHistory: any[] = [];
-    for (const msg of history) {
-      if (validHistory.length === 0 || validHistory[validHistory.length - 1].role !== msg.role) {
-        validHistory.push(msg);
-      } else {
-        // Append text to the previous message if roles are identical
-        validHistory[validHistory.length - 1].parts[0].text += '\n\n' + msg.parts[0].text;
+          // Gemini strictly requires the history to start with a 'user' role
+          if (history.length > 0 && history[0].role === 'model') {
+            history.unshift({ role: 'user', parts: [{ text: 'Start conversation' }] });
+          }
+
+          // Ensure strict alternation between 'user' and 'model'
+          const validHistory: any[] = [];
+          for (const msg of history) {
+            if (validHistory.length === 0 || validHistory[validHistory.length - 1].role !== msg.role) {
+              validHistory.push(msg);
+            } else {
+              // Append text to the previous message if roles are identical
+              validHistory[validHistory.length - 1].parts[0].text += '\n\n' + msg.parts[0].text;
+            }
+          }
+          history = validHistory;
+
+          const chat = model.startChat({ history });
+          const result = await chat.sendMessage(lastMessage.content);
+          return result.response.text();
+
+        } catch (err: any) {
+          const errorMessage = err.message || '';
+          const isTransientError = 
+            errorMessage.includes('503') || 
+            errorMessage.includes('504') || 
+            errorMessage.includes('429');
+
+          if (!isTransientError) {
+            this.logger.warn(`Gemini model ${modelName} failed permanently: ${errorMessage}. Trying next model if available.`);
+            lastError = err;
+            break; // Break the retry loop and try the next model
+          }
+
+          if (attempt === maxRetries - 1) {
+            this.logger.warn(`Gemini model ${modelName} ran out of retries on transient errors. Trying next model if available.`);
+            lastError = err;
+            break; // Try next model
+          }
+
+          const delay = (Math.pow(2, attempt) * baseDelay) + Math.floor(Math.random() * 1000);
+          this.logger.warn(`Gemini 503/429 caught on ${modelName}. Retrying attempt ${attempt + 1}/${maxRetries} in ${delay}ms...`);
+          await this.sleep(delay);
+        }
       }
     }
-    history = validHistory;
+    
+    throw lastError || new Error('All Gemini models failed');
+  }
 
-    const chat = model.startChat({ history });
-    const result = await chat.sendMessage(lastMessage.content);
-    return result.response.text();
+  private sleep(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
