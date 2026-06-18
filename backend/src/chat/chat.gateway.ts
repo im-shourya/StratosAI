@@ -11,7 +11,16 @@ import { LlmService } from './llm.service';
 import { AssessmentsService } from '../assessments/assessments.service';
 import { Logger, Inject, forwardRef } from '@nestjs/common';
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({
+  cors: {
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://stratos-ai-two.vercel.app'
+    ],
+    credentials: true,
+  },
+})
 export class ChatGateway implements OnGatewayConnection {
   @WebSocketServer()
   server!: Server;

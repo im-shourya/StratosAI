@@ -19,7 +19,14 @@ async function bootstrap() {
     console.log('✅ [StratosAI] NestJS app created successfully');
 
     app.setGlobalPrefix('api');
-    app.enableCors();
+    app.enableCors({
+      origin: [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        'https://stratos-ai-two.vercel.app'
+      ],
+      credentials: true,
+    });
     app.useGlobalPipes(new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
