@@ -40,9 +40,9 @@ export default function LoginPage() {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
       
-      const response = await fetchApi("/api/auth/login", {
+      const response = await fetchApi("/api/auth/oauth", {
         method: "POST",
-        body: JSON.stringify({ email: user.email, password: user.uid }), // using uid as fallback if OAuth not explicitly handled by backend
+        body: JSON.stringify({ email: user.email, uid: user.uid }),
       });
       localStorage.setItem("token", response.access_token);
       setMessage("Login successful! Redirecting...");
