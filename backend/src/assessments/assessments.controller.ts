@@ -40,6 +40,13 @@ export class AssessmentsController {
     return { status: 'Message received' };
   }
 
+  /** Returns which ML fields have been collected and overall completion percentage. */
+  @Get(':id/completion')
+  async getCompletion(@Param('id', ParseUUIDPipe) id: string) {
+    const assessment = await this.assessmentsService.getAssessment(id);
+    return assessment.completion_status;
+  }
+
   @Get(':id/status')
   async getStatus(@Param('id', ParseUUIDPipe) id: string) {
     const assessment = await this.assessmentsService.getAssessment(id);

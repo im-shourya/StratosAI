@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger, Inject, forwardRef } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { PrismaService } from '../prisma/prisma.service';
@@ -9,6 +9,168 @@ import { MlIntegrationService } from '../ml-integration/ml-integration.service';
 import { LlmService } from '../chat/llm.service';
 
 import { VendorsService } from '../vendors/vendors.service';
+
+// ── ML Feature Definitions ──────────────────────────────────────
+// Maps directly to build_inference_row() in ml/feature_engineering.py
+// These are the 6 fields the chat MUST collect.
+
+export interface MlFieldDefinition {
+  key: string;
+  label: string;            // Human-readable label for the frontend tracker
+  description: string;      // What to ask about
+  type: 'float' | 'int';
+  min: number;
+  max: number;
+  unit: string;
+  promptHint: string;       // Hint for the LLM to ask the right question
+  fallbackRanges: string;   // Standardized ranges to offer when user doesn't know exact value
+}
+
+export const REQUIRED_ML_FIELDS: MlFieldDefinition[] = [
+  {
+    key: 'ai_investment_usd',
+    label: 'Planned AI Budget (USD)',
+    description: 'Total planned AI/ML investment or budget in US Dollars',
+    type: 'float',
+    min: 1000,
+    max: 100_000_000_000,
+    unit: 'USD',
+    promptHint: 'Ask about their total planned AI/ML budget or investment amount in USD. Accept values in lakhs, crores, thousands (k), millions (M), or billions (B) and note the conversion.',
+    fallbackRanges: 'Under $50K (use 25000) | $50K–$250K (use 150000) | $250K–$1M (use 625000) | $1M–$5M (use 3000000) | Over $5M (use 7500000)'
+  },
+  {
+    key: 'ai_maturity_score',
+    label: 'AI Maturity Level (1-10)',
+    description: 'Current AI maturity on a 1-10 scale',
+    type: 'float',
+    min: 1.0,
+    max: 10.0,
+    unit: 'score',
+    promptHint: 'Ask them to rate their current AI maturity on a scale of 1-10 (1 = no AI experience, 5 = some pilots running, 10 = AI-native organization).',
+    fallbackRanges: 'Beginner / just exploring (use 2.0) | Some experiments running (use 4.0) | Active pilots in production (use 6.0) | AI integrated into core workflows (use 8.0) | AI-native organization (use 10.0)'
+  },
+  {
+    key: 'automation_rate',
+    label: 'Workflow Automation (%)',
+    description: 'Percentage of workflows currently automated',
+    type: 'float',
+    min: 0.0,
+    max: 1.0,
+    unit: 'ratio (0-1)',
+    promptHint: 'Ask what percentage of their current workflows or business processes are automated (0% to 100%). Store as a decimal ratio (e.g., 30% → 0.3).',
+    fallbackRanges: 'Almost nothing automated (use 0.05) | A few key processes (use 0.2) | Roughly half (use 0.5) | Most workflows (use 0.75) | Fully automated (use 0.95)'
+  },
+  {
+    key: 'ai_adoption_level',
+    label: 'Org-Wide AI Adoption (%)',
+    description: 'How widely AI has been adopted across the organization',
+    type: 'float',
+    min: 0.0,
+    max: 1.0,
+    unit: 'ratio (0-1)',
+    promptHint: 'Ask how widely AI has been adopted across the organization. Map responses: "one team/pilot" → 0.1-0.2, "a few departments" → 0.3-0.4, "multiple departments" → 0.5-0.6, "most of the company" → 0.7-0.8, "company-wide" → 0.9-1.0.',
+    fallbackRanges: 'One team or pilot project (use 0.15) | A few departments (use 0.35) | Multiple departments (use 0.55) | Most of the company (use 0.75) | Company-wide (use 0.9)'
+  },
+  {
+    key: 'employee_training_hrs',
+    label: 'AI Training (hrs/year)',
+    description: 'Annual AI/ML training hours per employee',
+    type: 'float',
+    min: 0,
+    max: 500,
+    unit: 'hours',
+    promptHint: 'Ask how many hours of AI/ML training each employee receives per year on average.',
+    fallbackRanges: 'No formal training (use 0) | A few hours a year (use 8) | A week-long program (use 40) | Ongoing monthly training (use 100) | Intensive continuous learning (use 200)'
+  },
+  {
+    key: 'num_deployments',
+    label: 'Deployed AI Systems',
+    description: 'Number of AI/ML systems currently deployed in production',
+    type: 'int',
+    min: 0,
+    max: 500,
+    unit: 'count',
+    promptHint: 'Ask how many AI or ML models/systems they currently have running in production.',
+    fallbackRanges: 'None yet (use 0) | 1–3 small tools (use 2) | 4–10 systems (use 7) | 10–25 across departments (use 18) | 25+ enterprise-wide (use 35)'
+  }
+];
+
+const REQUIRED_FIELD_KEYS = REQUIRED_ML_FIELDS.map(f => f.key);
+
+// ── Extraction Prompt Template ──────────────────────────────────
+// Lightweight, structured output call that ONLY targets missing fields.
+
+function buildExtractionPrompt(chatTranscript: string, missingFields: MlFieldDefinition[]): string {
+  const fieldDescriptions = missingFields.map(f =>
+    `- "${f.key}": ${f.description}. Type: ${f.type}. Valid range: ${f.min}–${f.max}. Unit: ${f.unit}. Fallback ranges: ${f.fallbackRanges}.`
+  ).join('\n');
+
+  return `You are a precise data extraction engine. Analyze the following chat transcript and extract ONLY the fields listed below if the user has provided enough information to determine them.
+
+FIELDS TO EXTRACT (only extract if the user has clearly stated or implied a value):
+${fieldDescriptions}
+
+IMPORTANT RULES:
+- Return ONLY a JSON object with the fields you could extract.
+- Each extracted field must have: "value" (number), "raw_answer" (the exact user text you based this on), "confidence" ("high" or "low").
+- For automation_rate and ai_adoption_level: convert percentages to decimal (e.g., 30% → 0.3).
+- For ai_investment_usd: convert any currency mentions to USD (1 lakh INR ≈ 1,200 USD, 1 crore INR ≈ 120,000 USD, "50k" → 50000, "2M" → 2000000).
+- If the user selected a RANGE instead of an exact number (e.g., "$50K–$250K" or "a few departments"), use the median value specified in the fallback ranges above.
+- Do NOT guess or fabricate values. If the user hasn't mentioned a field, omit it entirely.
+- If a value falls outside the valid range, still extract it but note it.
+- Return ONLY raw JSON, no markdown, no explanation.
+
+CHAT TRANSCRIPT:
+${chatTranscript}`;
+}
+
+// ── System Prompt Builder ───────────────────────────────────────
+// Dynamically injects missing fields so the LLM targets them.
+
+function buildSystemPrompt(missingFields: MlFieldDefinition[], collectedFields: string[]): string {
+  const collectedStr = collectedFields.length > 0
+    ? `\n\nYou have already collected: ${collectedFields.map(k => {
+        const f = REQUIRED_ML_FIELDS.find(f => f.key === k);
+        return f ? f.label : k;
+      }).join(', ')}.`
+    : '';
+
+  const missingStr = missingFields.length > 0
+    ? missingFields.map(f => `  • ${f.label}: ${f.promptHint}`).join('\n')
+    : '  All data collected!';
+
+  const fallbackStr = missingFields.length > 0
+    ? missingFields.map(f => `  • ${f.label}: ${f.fallbackRanges}`).join('\n')
+    : '';
+
+  return `You are StratosAI, a world-class Corporate AI Strategy Advisor powering a predictive ML engine. Your mission is to collect specific, quantifiable data points from the user through a professional and engaging conversation.
+
+CONVERSATION RULES:
+- Ask ONE clear, focused question at a time.
+- Be conversational, warm, and professional — you are advising a C-suite executive.
+- When the user gives a vague answer, ask a brief clarifying follow-up to get a precise number.
+- Do NOT ask about data points you've already collected.
+- Keep responses concise (2-4 sentences max per turn).
+- After collecting each data point, briefly acknowledge it before moving to the next.
+${collectedStr}
+
+HANDLING UNCERTAIN USERS:
+If the user says they don't know, aren't sure, or are "just exploring" for ANY metric, DO NOT keep re-asking the same question. Instead, offer them a set of standardized ranges to choose from. This makes it easy for them to give a rough estimate. Present the ranges naturally, like: "No problem — to give you a useful analysis, would you say your expected budget is closer to: under $50K, $50K–$250K, $250K–$1M, or over $1M?"
+
+FALLBACK RANGES PER FIELD:
+${fallbackStr}
+
+Never ask the same question more than twice. On the second attempt, always offer ranges.
+
+DATA POINTS YOU STILL NEED TO COLLECT (prioritize these in order):
+${missingStr}
+
+${missingFields.length === 0 ? 'All required data has been collected. Thank the user, summarize the key metrics you gathered, and let them know they can now generate their strategic report.' : ''}
+
+IMPORTANT: You are NOT making predictions or giving advice yet. You are gathering the precise inputs needed for the ML models to generate an accurate ROI prediction, risk assessment, and strategic roadmap.`;
+}
+
+// ─────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class AssessmentsService {
@@ -22,6 +184,10 @@ export class AssessmentsService {
     private readonly llmService: LlmService,
     private readonly vendorsService: VendorsService
   ) {}
+
+  // ═══════════════════════════════════════════════════════════════
+  //  START ASSESSMENT
+  // ═══════════════════════════════════════════════════════════════
 
   async startAssessment(data: StartAssessmentDto) {
     const sessionId = uuidv4();
@@ -43,12 +209,15 @@ export class AssessmentsService {
     if (data.department) initialExtractedData.department = data.department;
     if (data.project_name) initialExtractedData.project_name = data.project_name;
 
-    const projectStr = data.project_name ? ` for the ${data.project_name} project` : '';
-    const deptStr = data.department ? ` in the ${data.department} department` : '';
+    const projectStr = data.project_name ? ` for the **${data.project_name}** project` : '';
+    const deptStr = data.department ? ` in the **${data.department}** department` : '';
     
+    // Build initial system prompt with ALL fields missing
+    const systemPrompt = buildSystemPrompt(REQUIRED_ML_FIELDS, []);
+
     const initialMessage = {
       role: 'assistant',
-      content: `Welcome to the StratosAI Internal Strategy Advisor! To help tailor a predictive AI roadmap and ROI model${projectStr}${deptStr}, I need to understand your primary objectives. What specific business problem or workflow are you hoping to optimize using AI?`,
+      content: `Welcome to StratosAI — your AI-powered Strategic Intelligence Platform${projectStr}${deptStr}.\n\nI'll guide you through a brief assessment to build a comprehensive AI strategy roadmap tailored to your organization. I need to collect a few key data points to power our predictive models.\n\nLet's start with the most important one: **What is your organization's total planned budget or investment for AI initiatives?** Feel free to share in any currency — I'll handle the conversion.`,
       timestamp: new Date()
     };
 
@@ -57,20 +226,12 @@ export class AssessmentsService {
       assessment_id: assessment.id,
       session_id: sessionId,
       extracted_data: initialExtractedData,
+      validated_fields: {},
+      completion_pct: 0,
       messages: [
         {
           role: 'system',
-          content: `You are StratosAI, an elite Corporate AI Strategy Advisor. You have exactly 7 questions to gather the data needed for an ML-powered ROI prediction. Ask ONE clear question at a time. You MUST cover ALL of the following data points across your 7 questions:
-
-1. What is their total planned AI budget/investment in USD?
-2. On a scale of 1-10, what is their current AI maturity level? (1=no AI, 10=AI-native)
-3. What percentage of their workflows are currently automated? (0-100%)
-4. How many hours of AI/ML training do employees receive per year?
-5. How many AI systems/models do they currently have deployed in production?
-6. How widely has AI been adopted across the organization? (e.g., one team, multiple departments, company-wide)
-7. What is the specific use case or business problem they want to solve with AI?
-
-Be conversational but efficient. Do NOT ask vague or redundant questions. Each question must target one of the data points above. If the user gives a vague answer, briefly clarify and move on.`,
+          content: systemPrompt,
           timestamp: new Date()
         },
         initialMessage
@@ -80,9 +241,240 @@ Be conversational but efficient. Do NOT ask vague or redundant questions. Each q
     return {
       assessment_id: assessment.id,
       status: assessment.status,
-      message: initialMessage
+      message: initialMessage,
+      completion_status: this.getCompletionStatus({})
     };
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  FIELD EXTRACTION & VALIDATION ENGINE
+  // ═══════════════════════════════════════════════════════════════
+
+  /**
+   * After each user message, run a lightweight LLM extraction prompt
+   * that targets ONLY the missing fields. Returns newly extracted fields.
+   */
+  async extractAndValidateFields(assessmentId: string): Promise<{
+    newlyExtracted: Record<string, any>;
+    completionStatus: ReturnType<typeof this.getCompletionStatus>;
+  }> {
+    const conversation = await this.conversationModel.findOne({ assessment_id: assessmentId });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+
+    const currentValidated = conversation.validated_fields || {};
+    const collectedKeys = Object.keys(currentValidated).filter(k => currentValidated[k]?.is_valid);
+    const missingFieldDefs = REQUIRED_ML_FIELDS.filter(f => !collectedKeys.includes(f.key));
+
+    // If all fields are already collected, skip extraction
+    if (missingFieldDefs.length === 0) {
+      return {
+        newlyExtracted: {},
+        completionStatus: this.getCompletionStatus(currentValidated)
+      };
+    }
+
+    // Build a minimal transcript (skip system messages, keep last 10 messages for context)
+    const recentMessages = conversation.messages
+      .filter((m: any) => m.role !== 'system')
+      .slice(-10);
+    const chatTranscript = recentMessages
+      .map((m: any) => `${m.role.toUpperCase()}: ${m.content}`)
+      .join('\n');
+
+    const extractionPrompt = buildExtractionPrompt(chatTranscript, missingFieldDefs);
+
+    let extracted: Record<string, any> = {};
+    try {
+      const result = await this.llmService.generateResponse([
+        { role: 'user', content: extractionPrompt }
+      ], true); // isReportGeneration=true for single-shot, no chat history needed
+
+      const cleanJson = result.replace(/```json/gi, '').replace(/```/g, '').trim();
+      extracted = JSON.parse(cleanJson);
+      this.logger.log(`Extraction result: ${JSON.stringify(extracted)}`);
+    } catch (err: any) {
+      this.logger.warn(`Field extraction failed: ${err.message}`);
+      return {
+        newlyExtracted: {},
+        completionStatus: this.getCompletionStatus(currentValidated)
+      };
+    }
+
+    // Validate and merge newly extracted fields
+    const newlyValidated: Record<string, any> = {};
+    for (const fieldDef of missingFieldDefs) {
+      const extractedField = extracted[fieldDef.key];
+      if (!extractedField || extractedField.value === undefined || extractedField.value === null) continue;
+
+      const validated = this.validateField(fieldDef, extractedField.value);
+      if (validated.is_valid) {
+        newlyValidated[fieldDef.key] = {
+          value: validated.value,
+          raw_answer: extractedField.raw_answer || '',
+          is_valid: true,
+          extracted_at: new Date()
+        };
+      }
+    }
+
+    // Merge into existing validated_fields
+    const updatedValidated = { ...currentValidated, ...newlyValidated };
+    const completionPct = this.calculateCompletionPct(updatedValidated);
+
+    // Persist to MongoDB
+    await this.conversationModel.updateOne(
+      { assessment_id: assessmentId },
+      {
+        $set: {
+          validated_fields: updatedValidated,
+          completion_pct: completionPct,
+          extracted_data: {
+            ...conversation.extracted_data,
+            ...Object.fromEntries(
+              Object.entries(newlyValidated).map(([k, v]: [string, any]) => [k, v.value])
+            )
+          }
+        }
+      }
+    );
+
+    // Also sync key fields to PostgreSQL Assessment record
+    if (Object.keys(newlyValidated).length > 0) {
+      const prismaUpdate: any = {};
+      if (newlyValidated.ai_investment_usd) prismaUpdate.ai_budget = newlyValidated.ai_investment_usd.value;
+      if (newlyValidated.ai_maturity_score) prismaUpdate.ai_maturity = Math.round(newlyValidated.ai_maturity_score.value);
+      if (newlyValidated.automation_rate) prismaUpdate.automation_rate = newlyValidated.automation_rate.value;
+      if (newlyValidated.employee_training_hrs) prismaUpdate.employee_training_hours = newlyValidated.employee_training_hrs.value;
+      if (newlyValidated.num_deployments) prismaUpdate.num_ai_deployments = newlyValidated.num_deployments.value;
+
+      if (Object.keys(prismaUpdate).length > 0) {
+        await this.prisma.assessment.update({
+          where: { id: assessmentId },
+          data: prismaUpdate
+        });
+      }
+    }
+
+    const completionStatus = this.getCompletionStatus(updatedValidated);
+
+    // If all fields are now complete, mark conversation
+    if (completionStatus.isComplete) {
+      await this.conversationModel.updateOne(
+        { assessment_id: assessmentId },
+        { $set: { complete: true, phase: 'COMPLETE' } }
+      );
+    }
+
+    return { newlyExtracted: newlyValidated, completionStatus };
+  }
+
+  /**
+   * Validates a single field value against the ML model's expected range.
+   */
+  private validateField(fieldDef: MlFieldDefinition, rawValue: any): { is_valid: boolean; value: number } {
+    let value = typeof rawValue === 'string' ? parseFloat(rawValue) : Number(rawValue);
+
+    if (isNaN(value)) {
+      return { is_valid: false, value: 0 };
+    }
+
+    // Clamp to valid range
+    if (fieldDef.type === 'int') {
+      value = Math.round(value);
+    }
+
+    // Check if within valid range (with small tolerance)
+    const isWithinRange = value >= fieldDef.min && value <= fieldDef.max;
+
+    if (!isWithinRange) {
+      // Auto-correct common mistakes
+      if (fieldDef.key === 'automation_rate' || fieldDef.key === 'ai_adoption_level') {
+        // User might say "30" meaning 30% → convert to 0.3
+        if (value > 1 && value <= 100) {
+          value = value / 100;
+        }
+      }
+      // Re-check after correction
+      if (value < fieldDef.min) value = fieldDef.min;
+      if (value > fieldDef.max) value = fieldDef.max;
+    }
+
+    return { is_valid: true, value };
+  }
+
+  /**
+   * Returns completion status for the frontend tracker.
+   */
+  getCompletionStatus(validatedFields: Record<string, any>) {
+    const fields = REQUIRED_ML_FIELDS.map(f => {
+      const validated = validatedFields[f.key];
+      return {
+        key: f.key,
+        label: f.label,
+        description: f.description,
+        unit: f.unit,
+        collected: !!(validated?.is_valid),
+        value: validated?.is_valid ? validated.value : null,
+        raw_answer: validated?.raw_answer || null
+      };
+    });
+
+    const collectedCount = fields.filter(f => f.collected).length;
+    const totalCount = fields.length;
+    const pct = Math.round((collectedCount / totalCount) * 100);
+
+    return {
+      fields,
+      collectedCount,
+      totalCount,
+      pct,
+      isComplete: collectedCount === totalCount,
+      missingFields: fields.filter(f => !f.collected).map(f => f.label)
+    };
+  }
+
+  private calculateCompletionPct(validatedFields: Record<string, any>): number {
+    const collectedCount = REQUIRED_FIELD_KEYS.filter(
+      k => validatedFields[k]?.is_valid
+    ).length;
+    return Math.round((collectedCount / REQUIRED_FIELD_KEYS.length) * 100);
+  }
+
+  /**
+   * Updates the system prompt with current missing-field awareness.
+   * Called before generating the LLM response so it targets the right data.
+   */
+  async updateSystemPromptForTurn(assessmentId: string): Promise<void> {
+    const conversation = await this.conversationModel.findOne({ assessment_id: assessmentId });
+    if (!conversation) return;
+
+    const currentValidated = conversation.validated_fields || {};
+    const collectedKeys = Object.keys(currentValidated).filter(k => currentValidated[k]?.is_valid);
+    const missingFieldDefs = REQUIRED_ML_FIELDS.filter(f => !collectedKeys.includes(f.key));
+
+    const updatedSystemPrompt = buildSystemPrompt(missingFieldDefs, collectedKeys);
+
+    // Update the system message in the conversation
+    const messages = conversation.messages;
+    if (messages.length > 0 && messages[0].role === 'system') {
+      messages[0].content = updatedSystemPrompt;
+    } else {
+      messages.unshift({
+        role: 'system',
+        content: updatedSystemPrompt,
+        timestamp: new Date()
+      } as any);
+    }
+
+    await this.conversationModel.updateOne(
+      { assessment_id: assessmentId },
+      { $set: { messages } }
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  GET ASSESSMENT
+  // ═══════════════════════════════════════════════════════════════
 
   async getAssessment(assessmentId: string) {
     const assessment = await this.prisma.assessment.findUnique({ 
@@ -98,9 +490,15 @@ Be conversational but efficient. Do NOT ask vague or redundant questions. Each q
       ...assessment,
       chat_history: conversation.messages,
       extracted_data: conversation.extracted_data,
+      validated_fields: conversation.validated_fields || {},
+      completion_status: this.getCompletionStatus(conversation.validated_fields || {}),
       phase: conversation.phase
     };
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  GET ALL ASSESSMENTS
+  // ═══════════════════════════════════════════════════════════════
 
   async getAllAssessments(userId: string) {
     const assessments = await this.prisma.assessment.findMany({
@@ -118,10 +516,14 @@ Be conversational but efficient. Do NOT ask vague or redundant questions. Each q
       else if (a.status === 'error' || a.status === 'FAILED') progress = 40;
       else {
         const conversation = conversations.find(c => c.assessment_id === a.id);
-        if (conversation && conversation.messages) {
-          const assistantMsgs = conversation.messages.filter((m: any) => m.role === 'assistant').length;
-          // We increased the frontend chat limit to 7 questions
-          progress = Math.min(95, Math.round((assistantMsgs / 7) * 100));
+        if (conversation) {
+          // Use field-based completion instead of message count
+          progress = conversation.completion_pct || 0;
+          // If completion_pct isn't set yet, fall back to message-based estimate
+          if (progress === 0 && conversation.messages) {
+            const assistantMsgs = conversation.messages.filter((m: any) => m.role === 'assistant').length;
+            progress = Math.min(95, Math.round((assistantMsgs / 7) * 100));
+          }
         } else {
           progress = 5;
         }
@@ -139,6 +541,10 @@ Be conversational but efficient. Do NOT ask vague or redundant questions. Each q
     });
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  ADD MESSAGE
+  // ═══════════════════════════════════════════════════════════════
+
   async addMessage(assessmentId: string, message: { role: string; content: string; timestamp: Date }) {
     const conversation = await this.conversationModel.findOne({ assessment_id: assessmentId });
     if (!conversation) throw new NotFoundException('Conversation not found');
@@ -148,8 +554,22 @@ Be conversational but efficient. Do NOT ask vague or redundant questions. Each q
     return message;
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  //  ANALYZE ASSESSMENT (ML Pipeline)
+  // ═══════════════════════════════════════════════════════════════
+
   async analyzeAssessment(assessmentId: string, userId: string) {
-    // Run analysis synchronously/directly since BullMQ/Redis was removed
+    // Verify all fields are collected before running analysis
+    const conversation = await this.conversationModel.findOne({ assessment_id: assessmentId });
+    if (!conversation) throw new NotFoundException('Conversation not found');
+
+    const completionStatus = this.getCompletionStatus(conversation.validated_fields || {});
+    if (!completionStatus.isComplete) {
+      throw new BadRequestException(
+        `Cannot analyze: ${completionStatus.missingFields.length} required field(s) still missing: ${completionStatus.missingFields.join(', ')}. Complete the chat assessment first.`
+      );
+    }
+
     this.logger.log(`Starting analysis for assessment ${assessmentId} (User: ${userId})`);
     const results = await this.executeAnalysis(assessmentId, userId);
     return { status: 'COMPLETED', results };
@@ -157,64 +577,48 @@ Be conversational but efficient. Do NOT ask vague or redundant questions. Each q
 
   async executeAnalysis(assessmentId: string, userId: string) {
     const assessment = await this.getAssessment(assessmentId);
+    const validatedFields = assessment.validated_fields || {};
 
     try {
-      // 1. Extract features from chat history using LLM
-      try {
-        const chatPrompt = assessment.chat_history.map((m: any) => `${m.role}: ${m.content}`).join('\n');
-        const extractionPrompt = `You are a data extraction engine. Given the following chat transcript between an AI advisor and a corporate user, extract these values into a strict JSON object. Use contextual clues to infer values if they are not stated explicitly.
+      // ── Build ML features from validated chat data ────────────
+      // Use validated_fields directly — NO hardcoded defaults.
+      // The fields are guaranteed to exist because analyzeAssessment() checks completeness.
+      const extractedFeatures = {
+        ai_investment_usd: validatedFields.ai_investment_usd?.value,
+        ai_maturity_score: validatedFields.ai_maturity_score?.value,
+        automation_rate: validatedFields.automation_rate?.value,
+        ai_adoption_level: validatedFields.ai_adoption_level?.value,
+        employee_training_hrs: validatedFields.employee_training_hrs?.value,
+        num_deployments: validatedFields.num_deployments?.value,
+      };
 
-- "ai_investment_usd": total AI investment/budget in USD (number). If mentioned in lakhs/crores, convert to USD (1 lakh = ~1200 USD, 1 crore = ~120000 USD). If mentioned in thousands (e.g. "50k"), expand to full number. Default to 500000 if completely unclear.
-- "ai_maturity_score": AI maturity score from 1.0 to 10.0 (number). If user says "beginner" use 2.0, "intermediate" use 5.0, "advanced" use 8.0. Default to 3.0.
-- "automation_rate": what fraction of workflows are automated, from 0.0 to 1.0 (number). If user says "20%" use 0.2, "half" use 0.5. Default to 0.2.
-- "num_deployments": number of existing AI/ML systems in production (integer). If user says "none" use 0, "a few" use 3. Default to 1.
-- "employee_training_hrs": annual AI/ML training hours per employee (number). If user says "a week" use 40, "a day" use 8. Default to 40.
-- "ai_adoption_level": how widely AI is adopted across the org, from 0.0 to 1.0 (number). If "one team" use 0.2, "multiple departments" use 0.5, "company-wide" use 0.8. Default to 0.3.
+      this.logger.log(`Using validated ML features: ${JSON.stringify(extractedFeatures)}`);
 
-Chat Transcript:
-${chatPrompt}
+      // Sync validated features to Postgres
+      await this.prisma.assessment.update({
+        where: { id: assessment.id },
+        data: {
+          ai_budget: extractedFeatures.ai_investment_usd,
+          ai_maturity: Math.round(extractedFeatures.ai_maturity_score),
+          automation_rate: extractedFeatures.automation_rate,
+          employee_training_hours: extractedFeatures.employee_training_hrs,
+          num_ai_deployments: extractedFeatures.num_deployments,
+        }
+      });
 
-Return ONLY raw JSON, no markdown formatting.`;
+      // Save to MongoDB extracted_data as well
+      await this.conversationModel.updateOne(
+        { assessment_id: assessment.id },
+        { $set: { extracted_data: { ...assessment.extracted_data, ...extractedFeatures } } }
+      );
 
-        const extractionResult = await this.llmService.generateResponse([
-          { role: 'user', content: extractionPrompt }
-        ], true);
-
-        const cleanJson = extractionResult.replace(/```json/gi, '').replace(/```/g, '').trim();
-        const extracted = JSON.parse(cleanJson);
-        
-        assessment.ai_budget = extracted.ai_investment_usd || assessment.ai_budget || 500000;
-        assessment.ai_maturity = extracted.ai_maturity_score || assessment.ai_maturity || 3.0;
-        assessment.extracted_data = { ...assessment.extracted_data, ...extracted };
-        
-        // Save the newly extracted data to MongoDB and Postgres so the frontend can read it later
-        await this.conversationModel.updateOne(
-          { assessment_id: assessment.id },
-          { $set: { extracted_data: assessment.extracted_data } }
-        );
-        await this.prisma.assessment.update({
-          where: { id: assessment.id },
-          data: {
-            ai_budget: assessment.ai_budget,
-            ai_maturity: assessment.ai_maturity,
-            automation_rate: extracted.automation_rate || 0.2,
-            employee_training_hours: extracted.employee_training_hrs || 40,
-            num_ai_deployments: extracted.num_deployments || 1,
-          }
-        });
-
-        this.logger.log(`Extracted ML features: ${JSON.stringify(extracted)}`);
-      } catch (extractError: any) {
-        this.logger.error(`LLM Extraction failed, using defaults. Error: ${extractError.message}`);
-      }
-
-      // Call ML Integration
+      // ── Call ML Integration ───────────────────────────────────
       const features = {
-        industry: assessment.user?.industry || 'Unknown',
+        industry: assessment.user?.industry || 'Technology',
         country: assessment.user?.country || 'US',
-        budget: assessment.ai_budget,
-        maturity: assessment.ai_maturity,
-        ...assessment.extracted_data
+        budget: extractedFeatures.ai_investment_usd,
+        maturity: extractedFeatures.ai_maturity_score,
+        ...extractedFeatures
       };
       
       const mlResults = await this.mlIntegration.predictFull(features);
@@ -272,7 +676,7 @@ Return ONLY raw JSON, no markdown formatting.`;
             peer_percentile: maturity.peer_percentile || 0,
             risk_technical: typeof riskScores.technical === 'object' ? riskScores.technical.score : (riskScores.technical || 0),
             risk_financial: typeof riskScores.financial === 'object' ? riskScores.financial.score : (riskScores.financial || 0),
-            risk_talent: typeof riskScores.talent === 'object' ? riskScores.talent.score : (riskScores.talent || 0),
+            risk_talent: typeof riskScores.talent === 'object' ? riskScores.talent.score : (riskScores.technical || 0),
             risk_regulatory: typeof riskScores.regulatory === 'object' ? riskScores.regulatory.score : (riskScores.regulatory || 0),
             risk_market: typeof riskScores.market === 'object' ? riskScores.market.score : (riskScores.market || 0),
             scenario_baseline_roi: scenarios.conservative?.roi_pct || roi.roi_percentage || 0,
@@ -288,9 +692,6 @@ Return ONLY raw JSON, no markdown formatting.`;
         })
       ]);
 
-      // In a real scenario, here we would also generate the LLM report and save to MongoDB via ReportsService
-      // If saving to MongoDB fails, it will throw and go to catch block
-
       return mlResults;
     } catch (error: any) {
       this.logger.error(`Analysis failed for ${assessmentId} (User: ${userId}), performing soft rollback. Error: ${error.message}`);
@@ -304,6 +705,10 @@ Return ONLY raw JSON, no markdown formatting.`;
       throw error;
     }
   }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  GLOBAL SEARCH
+  // ═══════════════════════════════════════════════════════════════
 
   async searchGlobal(userId: string, query: string) {
     if (!query || query.length < 2) return { assessments: [], vendors: [] };

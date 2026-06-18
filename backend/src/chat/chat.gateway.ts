@@ -41,23 +41,43 @@ export class ChatGateway implements OnGatewayConnection {
         timestamp: new Date()
       });
 
-      // 2. Fetch updated history
+      // 2. Extract and validate fields from the conversation so far
+      //    This runs a lightweight LLM call targeting ONLY missing fields.
+      const { completionStatus: preResponseStatus } = 
+        await this.assessmentsService.extractAndValidateFields(data.assessmentId);
+
+      // 3. Emit extraction update to the client immediately
+      //    (so the tracker updates even before the AI responds)
+      client.emit('fieldUpdate', preResponseStatus);
+
+      // 4. Update the system prompt with current missing-field awareness
+      //    so the LLM targets the right data points in its next response.
+      await this.assessmentsService.updateSystemPromptForTurn(data.assessmentId);
+
+      // 5. Fetch updated history and generate LLM response
       const assessment = await this.assessmentsService.getAssessment(data.assessmentId);
-      
-      // 3. Generate LLM response (Fallback logic: Ollama -> Gemini)
-      // Note: Full streaming requires more complex SSE or chunked WS events. 
-      // For this implementation, we await full response.
       const llmResponse = await this.llmService.generateResponse(assessment.chat_history);
 
-      // 4. Save assistant message
+      // 6. Save assistant message
       const savedMessage = await this.assessmentsService.addMessage(data.assessmentId, {
         role: 'assistant',
         content: llmResponse,
         timestamp: new Date()
       });
 
-      // 5. Send back to client
-      client.emit('receiveMessage', savedMessage);
+      // 7. Send the message back with the latest completion status
+      client.emit('receiveMessage', {
+        ...savedMessage,
+        completion_status: preResponseStatus
+      });
+
+      // 8. If all fields are now collected, emit a special event
+      if (preResponseStatus.isComplete) {
+        client.emit('assessmentReady', {
+          message: 'All required data has been collected. You can now generate the strategic report.',
+          completion_status: preResponseStatus
+        });
+      }
 
     } catch (error: any) {
       this.logger.error(`Error in handleMessage: ${error.message}`);
