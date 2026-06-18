@@ -89,7 +89,7 @@ export function TopNav() {
 
   return (
     <header
-      className="sticky top-6 z-50 mx-4 md:mx-8 px-6 py-4 flex items-center justify-between glass glass--elevated"
+      className="sticky top-6 z-50 mx-4 md:mx-8 px-6 py-4 flex items-center justify-between bg-[var(--glass-bg)] backdrop-blur-2xl border border-[var(--glass-border-subtle)] shadow-[var(--shadow-elevated)]"
       style={{ borderRadius: "2rem" }}
     >
       {/* Logo */}
