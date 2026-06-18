@@ -64,7 +64,6 @@ export default function DashboardPage() {
           <KpiCard
             label="Total Projected ROI"
             value={metrics.totalProjectedRoi}
-            trend={{ direction: "up", value: "15%" }}
           >
             <div className="space-y-4">
               {budget.length === 0 ? (
