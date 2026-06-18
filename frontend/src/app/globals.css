@@ -76,6 +76,58 @@ html {
   --text-mono: 0.875rem;
 }
 
+/* ── Theme: Midnight Glass (Dark, Sleek) ─────────── */
+[data-theme="midnight"] {
+  --color-navy:           #F8FAFC;
+  --color-primary:        #60A5FA;
+  --color-primary-light:  #93C5FD;
+  --color-text-primary:   #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-tertiary:  #64748B;
+  
+  --color-bg-base:        #0B0E1F;
+  --color-bg-page:        #020617;
+  
+  --glass-bg:             rgba(15, 23, 42, 0.65);
+  --glass-bg-elevated:    rgba(30, 41, 59, 0.85);
+  --glass-border:         rgba(255, 255, 255, 0.15);
+  --glass-border-subtle:  rgba(255, 255, 255, 0.05);
+  --glass-highlight:      rgba(255, 255, 255, 0.1);
+  
+  --mesh-color-1:         #1E1B4B;
+  --mesh-color-2:         #312E81;
+  --mesh-color-3:         #020617;
+  --mesh-color-4:         #0F172A;
+  
+  --surface-solid:        #0F172A;
+}
+
+/* ── Theme: Cyberpunk Glass (Neon, High Contrast) ─────────── */
+[data-theme="cyberpunk"] {
+  --color-navy:           #39FF14;
+  --color-primary:        #FF007F;
+  --color-primary-light:  #FF4DA6;
+  --color-text-primary:   #E0E0E0;
+  --color-text-secondary: #A0A0A0;
+  --color-text-tertiary:  #707070;
+  
+  --color-bg-base:        #050505;
+  --color-bg-page:        #000000;
+  
+  --glass-bg:             rgba(10, 10, 10, 0.7);
+  --glass-bg-elevated:    rgba(20, 20, 20, 0.9);
+  --glass-border:         rgba(57, 255, 20, 0.3);
+  --glass-border-subtle:  rgba(255, 0, 127, 0.15);
+  --glass-highlight:      rgba(57, 255, 20, 0.2);
+  
+  --mesh-color-1:         #1A0033;
+  --mesh-color-2:         #33001A;
+  --mesh-color-3:         #001A1A;
+  --mesh-color-4:         #0A0A0A;
+  
+  --surface-solid:        #0A0A0A;
+}
+
 /* ── Tailwind v4 Theme Extension ────────────────────────── */
 @theme inline {
   --color-background: var(--color-bg-page);

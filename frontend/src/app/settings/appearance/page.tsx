@@ -49,19 +49,6 @@ export default function AppearanceSettings() {
         </div>
       </GlassCard>
 
-      <GlassCard className="space-y-4">
-        <h3 className="font-semibold" style={{ color: "var(--color-navy)" }}>Accessibility</h3>
-        
-        <div className="flex items-center justify-between p-4 rounded-xl glass">
-          <div>
-            <h4 className="font-medium text-sm mb-0.5" style={{ color: "var(--color-text-primary)" }}>Reduce Transparency</h4>
-            <p className="text-xs" style={{ color: "var(--color-text-secondary)" }}>Remove glass blur effects for better contrast. Uses system preference by default.</p>
-          </div>
-          <div className="w-11 h-6 rounded-full bg-[rgba(0,0,0,0.1)] relative">
-            <div className="absolute left-1 top-1 w-4 h-4 rounded-full bg-white shadow-sm" />
-          </div>
-        </div>
-      </GlassCard>
     </div>
   );
 }
