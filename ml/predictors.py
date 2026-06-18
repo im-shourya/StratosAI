@@ -36,27 +36,23 @@ def calculate_roi(annual_predicted_revenue: float, investment_amount: float) -> 
         payback_months          — months to break even
         roi_12m / roi_36m       — 1-year and 3-year ROI estimates
     """
-    investment_amount = max(investment_amount, 1.0)  # avoid div-by-zero
-
     annual_net_benefit      = annual_predicted_revenue - investment_amount
-    roi_pct                 = (annual_net_benefit / investment_amount) * 100
+    roi_pct                 = (annual_net_benefit / investment_amount) * 100 if investment_amount != 0 else 0
     quarterly_rev_impact    = annual_predicted_revenue / 4
-    monthly_net             = annual_net_benefit / 12
-    
+    roi_12m                 = roi_pct / 3
+    roi_36m                 = roi_pct
+
+    # -1.0 is a sentinel meaning "never pays back — do not clamp to zero"
     if annual_net_benefit <= 0:
         payback_months = -1.0
     else:
-        payback_months = investment_amount / monthly_net
-
-    # Multi-year projections (assume 15% annual improvement compounding)
-    roi_12m = roi_pct
-    roi_36m = roi_pct * (1 + 0.15) ** 2  # 3-year compounded
+        payback_months = round((investment_amount / (annual_net_benefit / 12)), 1)
 
     return {
         "roi_percentage":           round(roi_pct, 2),
         "annual_net_benefit":       round(annual_net_benefit, 2),
         "quarterly_revenue_impact": round(quarterly_rev_impact, 2),
-        "payback_months":           round(max(payback_months, 0), 1),
+        "payback_months":           round(payback_months, 1),   # ← no max() here
         "roi_12m":                  round(roi_12m, 2),
         "roi_36m":                  round(roi_36m, 2),
     }
@@ -146,57 +142,44 @@ def calculate_readiness_and_risk(transformation_score: float) -> dict:
 
 def run_scenario_simulator(
     base_investment: float,
-    revenue_model,          # trained XGBRegressor
+    revenue_model,
     revenue_feature_cols: list,
-    feature_dict: dict,     # raw chatbot payload (pre-engineering)
+    feature_dict: dict,
 ) -> dict:
     """
     Runs 3 parallel predictions at 1.0×, 1.2×, 1.5× investment.
     Returns ROI per scenario + automated board recommendation.
-
-    Args:
-        base_investment:      User's original investment amount
-        revenue_model:        Loaded revenue_impact_model.pkl
-        revenue_feature_cols: Column list used during training
-        feature_dict:         Raw input dict from chatbot
     """
-    multipliers = {
-        "conservative": 1.0,
-        "cautious":     1.2,
-        "aggressive":   1.5,
-    }
+    multipliers = {"conservative": 1.0, "cautious": 1.2, "aggressive": 1.5}
     results = {}
 
     for scenario, mult in multipliers.items():
-        scaled_inv = base_investment * mult
-
-        # Build a fresh feature dict with scaled investment
-        row = {**feature_dict, "ai_investment_usd": scaled_inv}
-
-        # Import here to avoid circular dependency
-        from feature_engineering import build_inference_row
-        X = build_inference_row(row)
+        scaled_investment = base_investment * mult
+        features = {**feature_dict, "ai_investment_usd": scaled_investment}
+        
+        from feature_engineering import build_inference_row, engineer_features
+        X = build_inference_row(features)
         X = engineer_features(X, for_revenue_model=True)
         avail = [c for c in revenue_feature_cols if c in X.columns]
         X = X[avail]
-
+        
         pred_revenue = float(revenue_model.predict(X)[0])
-        roi_data     = calculate_roi(pred_revenue, scaled_inv)
-
+        roi = ((pred_revenue - scaled_investment) / scaled_investment) * 100
         results[scenario] = {
-            "investment":    round(scaled_inv, 2),
-            "pred_revenue":  round(pred_revenue, 2),
-            "roi_pct":       roi_data["roi_percentage"],
-            "payback_months": roi_data["payback_months"],
-            "quarterly_impact": roi_data["quarterly_revenue_impact"],
+            "investment":   round(scaled_investment, 2),
+            "pred_revenue": round(pred_revenue, 2),
+            "roi_pct":      round(roi, 2),
         }
 
-    # ── Board recommendation logic ───────────────────────────────
     base_roi = results["conservative"]["roi_pct"]
     caut_roi = results["cautious"]["roi_pct"]
     aggr_roi = results["aggressive"]["roi_pct"]
 
-    if base_roi == 0:
+    # Negative baseline = project loses money at any investment level
+    if base_roi < 0:
+        recommendation = "REJECT / RE-EVALUATE"
+        confidence     = "HIGH"
+    elif base_roi == 0:
         recommendation = "DELAY EXPANSION"
         confidence     = "LOW"
     elif aggr_roi >= base_roi * 1.30:
@@ -209,8 +192,16 @@ def run_scenario_simulator(
         recommendation = "DELAY EXPANSION"
         confidence     = "LOW"
 
+    # Flag when higher investment worsens ROI
+    scaling_warning = None
+    if base_roi < 0 and aggr_roi < caut_roi:
+        scaling_warning = "Increasing investment worsens ROI — revenue model is not scaling proportionally."
+
     results["board_recommendation"] = recommendation
     results["confidence_level"]     = confidence
+    if scaling_warning:
+        results["scaling_warning"] = scaling_warning
+
     return results
 
 

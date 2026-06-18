@@ -39,7 +39,12 @@ export default function ReportPage() {
   const p = data.prediction || {};
   const roi = p.roi_percentage ? `${Number(p.roi_percentage).toFixed(1)}%` : "--";
   const cost = p.annual_net_benefit ? `$${(Number(p.annual_net_benefit) / 1000).toFixed(0)}k` : "--";
-  const time = p.payback_months === -1 ? "N/A" : (p.payback_months ? `${Number(p.payback_months).toFixed(1)} mo` : "--");
+  const formatPayback = (months: number): string => {
+    if (months < 0) return "N/A — investment not recovered";
+    if (months === 0) return "< 1 month";
+    return `${months.toFixed(1)} mo`;
+  };
+  const time = p.payback_months != null ? formatPayback(Number(p.payback_months)) : "--";
   
   // Format date
   const dateStr = new Date(data.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -264,11 +269,11 @@ export default function ReportPage() {
               <div className="space-y-4 mt-4">
                  <div className="flex justify-between border-b border-[var(--color-border)] pb-2">
                    <span className="text-body-sm text-[var(--color-text-secondary)]">Total Allocated</span>
-                   <span className="font-mono font-medium">${Number(data.ai_budget || 0).toLocaleString()}</span>
+                   <span className="font-mono font-medium">${Number(data.ai_budget || 0).toLocaleString('en-US')}</span>
                  </div>
                  <div className="flex justify-between border-b border-[var(--color-border)] pb-2">
                    <span className="text-body-sm text-[var(--color-text-secondary)]">Annual ROI Impact</span>
-                   <span className="font-mono font-medium text-[var(--color-success)]">+${Number(p.annual_revenue_impact || 0).toLocaleString()}</span>
+                   <span className="font-mono font-medium text-[var(--color-success)]">+${Number(p.annual_revenue_impact || 0).toLocaleString('en-US')}</span>
                  </div>
               </div>
               {p.llm_budget_verdict && (
