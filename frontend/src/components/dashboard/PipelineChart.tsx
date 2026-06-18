@@ -43,7 +43,7 @@ export function PipelineChart() {
   return (
     <div className="w-full bg-white rounded-3xl p-8 relative flex flex-col h-[500px] shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
       {/* Header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8 shrink-0">
         <h2 className="text-2xl font-bold font-display" style={{ color: "var(--color-navy)" }}>
           Pipeline
         </h2>
@@ -52,13 +52,14 @@ export function PipelineChart() {
         </button>
       </div>
 
-      <div className="flex-1 flex relative">
-        {/* Y-Axis */}
-        <div className="flex flex-col justify-between items-end pr-4 text-xs font-semibold text-gray-400 w-12 pb-8">
-          {Y_AXIS.map((val) => (
-            <span key={val}>{val}</span>
-          ))}
-        </div>
+      <div className="flex-1 overflow-x-auto pb-4 -mb-4">
+        <div className="min-w-[500px] h-full flex relative pr-2">
+          {/* Y-Axis */}
+          <div className="flex flex-col justify-between items-end pr-4 text-xs font-semibold text-gray-400 w-12 pb-8 shrink-0">
+            {Y_AXIS.map((val) => (
+              <span key={val}>{val}</span>
+            ))}
+          </div>
 
         {/* Chart Area */}
         <div className="flex-1 relative flex">
@@ -122,6 +123,8 @@ export function PipelineChart() {
                   key={stage.label}
                   className="flex-1 h-full relative border-l border-gray-100 first:border-l-0"
                   onMouseEnter={() => setHoverIndex(i)}
+                  onMouseLeave={() => setHoverIndex(null)}
+                  onTouchStart={() => setHoverIndex(i)}
                 >
                   {/* Column Background Highlight */}
                   <div className={clsx("absolute inset-0 bg-blue-50/30 transition-opacity duration-300", isActive ? "opacity-100" : "opacity-0")} />
@@ -185,6 +188,7 @@ export function PipelineChart() {
             })}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

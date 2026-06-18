@@ -12,6 +12,7 @@ interface Vendor {
   category: string;
   status: string;
   desc: string;
+  website_url?: string;
 }
 
 export default function VendorsPage() {
@@ -67,7 +68,11 @@ export default function VendorsPage() {
             <h3 className="font-display font-semibold text-xl mb-2" style={{ color: "var(--color-navy)" }}>{v.name}</h3>
             <p className="text-sm leading-relaxed mb-6 flex-1" style={{ color: "var(--color-text-secondary)" }}>{v.desc}</p>
             
-            <Button variant="glass" className="w-full justify-center gap-2 mt-auto">
+            <Button 
+              variant="glass" 
+              className="w-full justify-center gap-2 mt-auto"
+              onClick={() => window.open(v.website_url || '#', '_blank')}
+            >
               Vendor Profile <ExternalLink size={14} />
             </Button>
           </GlassCard>
