@@ -190,8 +190,33 @@ Return ONLY raw JSON.`;
 
       // Save ML results to predictions table and update Assessment using a Transaction
       await this.prisma.$transaction([
-        this.prisma.prediction.create({
-          data: {
+        this.prisma.prediction.upsert({
+          where: { assessment_id: assessment.id },
+          update: {
+            annual_revenue_impact: roi.quarterly_revenue_impact ? roi.quarterly_revenue_impact * 4 : 0,
+            quarterly_revenue_impact: roi.quarterly_revenue_impact || 0,
+            annual_net_benefit: roi.annual_net_benefit || 0,
+            productivity_gain_pct: prod.predicted_productivity_gain || 0,
+            roi_percentage: roi.roi_percentage || 0,
+            payback_months: roi.payback_months || 0,
+            risk_score: riskScores.technical?.score || riskScores.technical || 0,
+            transformation_score: tfScore,
+            readiness_level: readiness.readiness_level || 'LOW',
+            maturity_tier: maturity.maturity_tier || 1,
+            peer_percentile: maturity.peer_percentile || 0,
+            risk_technical: typeof riskScores.technical === 'object' ? riskScores.technical.score : (riskScores.technical || 0),
+            risk_financial: typeof riskScores.financial === 'object' ? riskScores.financial.score : (riskScores.financial || 0),
+            risk_talent: typeof riskScores.talent === 'object' ? riskScores.talent.score : (riskScores.talent || 0),
+            risk_regulatory: typeof riskScores.regulatory === 'object' ? riskScores.regulatory.score : (riskScores.regulatory || 0),
+            risk_market: typeof riskScores.market === 'object' ? riskScores.market.score : (riskScores.market || 0),
+            scenario_baseline_roi: scenarios.baseline?.roi_percentage || roi.roi_percentage || 0,
+            scenario_cautious_roi: scenarios.cautious?.roi_percentage || 0,
+            scenario_aggressive_roi: scenarios.aggressive?.roi_percentage || 0,
+            board_recommendation: scenarios.board_recommendation || '',
+            model_version: '2.0.0',
+            predicted_at: new Date()
+          },
+          create: {
             assessment_id: assessment.id,
             annual_revenue_impact: roi.quarterly_revenue_impact ? roi.quarterly_revenue_impact * 4 : 0,
             quarterly_revenue_impact: roi.quarterly_revenue_impact || 0,
