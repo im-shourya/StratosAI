@@ -59,7 +59,7 @@ export class LlmService {
   private async callGemini(messages: any[], isReportGeneration: boolean): Promise<string> {
     const systemMsg = messages.find(m => m.role === 'system')?.content;
     const model = this.genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       ...(systemMsg && { systemInstruction: systemMsg })
     });
 
@@ -76,7 +76,7 @@ export class LlmService {
     const lastMessage = chatMsgs[chatMsgs.length - 1];
     const historyMsgs = chatMsgs.slice(0, -1);
 
-    const history = historyMsgs.map(msg => ({
+    let history = historyMsgs.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : 'user',
       parts: [{ text: msg.content }]
     }));
@@ -85,6 +85,18 @@ export class LlmService {
     if (history.length > 0 && history[0].role === 'model') {
       history.unshift({ role: 'user', parts: [{ text: 'Start conversation' }] });
     }
+
+    // Ensure strict alternation between 'user' and 'model'
+    const validHistory: any[] = [];
+    for (const msg of history) {
+      if (validHistory.length === 0 || validHistory[validHistory.length - 1].role !== msg.role) {
+        validHistory.push(msg);
+      } else {
+        // Append text to the previous message if roles are identical
+        validHistory[validHistory.length - 1].parts[0].text += '\n\n' + msg.parts[0].text;
+      }
+    }
+    history = validHistory;
 
     const chat = model.startChat({ history });
     const result = await chat.sendMessage(lastMessage.content);
