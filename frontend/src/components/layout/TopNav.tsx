@@ -18,6 +18,7 @@ export function TopNav() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isMobileSearchVisible, setIsMobileSearchVisible] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<{ assessments?: any[], vendors?: any[] }>({});
 
@@ -62,6 +63,7 @@ export function TopNav() {
       }
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setIsSearchOpen(false);
+        setIsMobileSearchVisible(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -118,7 +120,10 @@ export function TopNav() {
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         {/* Search Input */}
-        <div className="flex items-center relative" ref={searchRef}>
+        <div 
+          className={`items-center relative ${isMobileSearchVisible ? "flex absolute left-4 right-16 top-1/2 -translate-y-1/2 z-50 bg-white/95 p-1 rounded-full shadow-lg border border-gray-100" : "hidden md:flex"}`} 
+          ref={searchRef}
+        >
           <Search size={18} className="absolute left-4 text-gray-400" />
           <input
             type="text"
@@ -129,7 +134,8 @@ export function TopNav() {
             }}
             onFocus={() => setIsSearchOpen(true)}
             placeholder="Search..."
-            className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-[120px] sm:w-[150px] md:w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
+            className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-full md:w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
+            autoFocus={isMobileSearchVisible}
           />
 
           {isSearchOpen && searchQuery.length > 1 && (
@@ -189,9 +195,14 @@ export function TopNav() {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          <button className="md:hidden w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-100 shadow-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors">
-            <Search size={18} />
-          </button>
+          {!isMobileSearchVisible && (
+            <button 
+              className="md:hidden w-10 h-10 rounded-full flex items-center justify-center bg-white border border-gray-100 shadow-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors"
+              onClick={() => setIsMobileSearchVisible(true)}
+            >
+              <Search size={18} />
+            </button>
+          )}
 
           {/* Profile Dropdown */}
           <div className="relative" ref={profileRef}>
