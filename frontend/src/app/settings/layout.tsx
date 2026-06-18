@@ -23,7 +23,7 @@ export default function SettingsLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen relative flex flex-col bg-[#F8F9FA]">
+    <div className="min-h-screen relative flex flex-col bg-[var(--color-bg-base)]">
       <div className="flex-1 flex flex-col min-w-0">
         <TopNav />
         <main className="flex-1 p-4 md:p-8 pb-24 lg:pb-8 overflow-y-auto">
