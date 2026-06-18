@@ -20,6 +20,7 @@ const VendorSchema = new Schema({
   category: String,
   status: String,
   desc: String,
+  website_url: String,
 });
 const VendorModel = mongoose.models.Vendor || mongoose.model('Vendor', VendorSchema);
 
@@ -134,12 +135,12 @@ async function main() {
   // Seed Vendors (MongoDB)
   await VendorModel.deleteMany({});
   const VENDORS = [
-    { name: "Databricks", category: "Data Infrastructure", status: "Verified", desc: "Unified analytics platform for massive scale data engineering, collaborative data science, and machine learning." },
-    { name: "Snowflake", category: "Data Infrastructure", status: "Verified", desc: "Cloud data platform enabling data storage, processing, and analytic solutions that are faster, easier to use, and far more flexible." },
-    { name: "Anthropic", category: "Foundation Models", status: "Verified", desc: "AI safety and research company building reliable, interpretable, and steerable AI systems (Claude)." },
-    { name: "Scale AI", category: "Data Labeling", status: "Partner", desc: "High-quality training data for AI applications, combining human intelligence with machine learning." },
-    { name: "Hugging Face", category: "MLOps", status: "Verified", desc: "The AI community building the future. Build, train and deploy state of the art models powered by the reference open source in machine learning." },
-    { name: "DataRobot", category: "AutoML", status: "Verified", desc: "Enterprise AI platform that democratizes data science and automates the end-to-end process for building, deploying, and maintaining machine learning." },
+    { name: "Databricks", category: "Data Infrastructure", status: "Verified", desc: "Unified analytics platform for massive scale data engineering, collaborative data science, and machine learning.", website_url: "https://www.databricks.com" },
+    { name: "Snowflake", category: "Data Infrastructure", status: "Verified", desc: "Cloud data platform enabling data storage, processing, and analytic solutions that are faster, easier to use, and far more flexible.", website_url: "https://www.snowflake.com" },
+    { name: "Anthropic", category: "Foundation Models", status: "Verified", desc: "AI safety and research company building reliable, interpretable, and steerable AI systems (Claude).", website_url: "https://www.anthropic.com" },
+    { name: "Scale AI", category: "Data Labeling", status: "Partner", desc: "High-quality training data for AI applications, combining human intelligence with machine learning.", website_url: "https://scale.com" },
+    { name: "Hugging Face", category: "MLOps", status: "Verified", desc: "The AI community building the future. Build, train and deploy state of the art models powered by the reference open source in machine learning.", website_url: "https://huggingface.co" },
+    { name: "DataRobot", category: "AutoML", status: "Verified", desc: "Enterprise AI platform that democratizes data science and automates the end-to-end process for building, deploying, and maintaining machine learning.", website_url: "https://www.datarobot.com" },
   ];
 
   await VendorModel.insertMany(VENDORS);
