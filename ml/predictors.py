@@ -42,7 +42,11 @@ def calculate_roi(annual_predicted_revenue: float, investment_amount: float) -> 
     roi_pct                 = (annual_net_benefit / investment_amount) * 100
     quarterly_rev_impact    = annual_predicted_revenue / 4
     monthly_net             = annual_net_benefit / 12
-    payback_months          = investment_amount / max(monthly_net, 0.01)
+    
+    if annual_net_benefit <= 0:
+        payback_months = -1.0
+    else:
+        payback_months = investment_amount / monthly_net
 
     # Multi-year projections (assume 15% annual improvement compounding)
     roi_12m = roi_pct
