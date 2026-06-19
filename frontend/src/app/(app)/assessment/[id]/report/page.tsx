@@ -263,6 +263,48 @@ export default function ReportPage() {
             </GlassCard>
           </div>
         </div>
+      {/* Maturity */}
+      {(activeTab === "maturity" || isExporting) && (
+        <div id="pdf-maturity" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {isExporting && <h2 className="text-h2 font-display font-bold mt-12 mb-4 border-b pb-2" style={{ color: "var(--color-navy)" }}>5. Maturity Analysis</h2>}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <MaturityBar currentTier={p.maturity_tier || 1} peerAvg={2.8} />
+            <GlassCard>
+              <h3 className="text-h3 font-display font-semibold mb-3 text-[var(--color-navy)]">Peer Comparison</h3>
+              <p className="text-body-sm leading-relaxed mb-4 text-[var(--color-text-secondary)]">
+                Your current AI adoption places you in the <strong>{Number(p.peer_percentile || 0).toFixed(1)}th percentile</strong> of your industry peers. 
+                Organizations at Level {p.maturity_tier || 1} typically focus on foundational data capabilities and isolated proof-of-concepts.
+              </p>
+            </GlassCard>
+          </div>
+        </div>
+      )}
+
+      {/* Roadmap */}
+      {(activeTab === "roadmap" || isExporting) && (
+        <div id="pdf-roadmap" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {isExporting && <h2 className="text-h2 font-display font-bold mt-12 mb-4 border-b pb-2" style={{ color: "var(--color-navy)" }}>6. Implementation Roadmap</h2>}
+          <GlassCard>
+            <h3 className="text-h3 font-display font-semibold mb-4 text-[var(--color-navy)]">Recommended Timeline</h3>
+            <div className="relative border-l-2 border-[var(--color-primary)] ml-3 space-y-8 py-2">
+               <div className="relative pl-6">
+                 <div className="absolute w-4 h-4 rounded-full bg-[var(--color-primary)] -left-[9px] top-1 shadow-[0_0_0_4px_rgba(41,128,185,0.2)]"></div>
+                 <h4 className="font-bold text-[var(--color-navy)]">Phase 1: Foundation (Months 1-3)</h4>
+                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">Mitigate primary risk vectors and establish pilot KPIs.</p>
+               </div>
+               <div className="relative pl-6">
+                 <div className="absolute w-4 h-4 rounded-full bg-gray-300 border-2 border-white -left-[9px] top-1"></div>
+                 <h4 className="font-bold text-[var(--color-navy)]">Phase 2: Pilot Deployment (Months 4-6)</h4>
+                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">Rollout to initial department and monitor early ROI metrics.</p>
+               </div>
+               <div className="relative pl-6">
+                 <div className="absolute w-4 h-4 rounded-full bg-gray-300 border-2 border-white -left-[9px] top-1"></div>
+                 <h4 className="font-bold text-[var(--color-navy)]">Phase 3: Scale (Months 7-12)</h4>
+                 <p className="text-sm text-[var(--color-text-secondary)] mt-1">Enterprise-wide adoption to capture projected annual net benefit.</p>
+               </div>
+            </div>
+          </GlassCard>
+        </div>
       )}
     </div>
   );
