@@ -178,7 +178,7 @@ export default function ReportPage() {
         <div id="pdf-overview" className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
           {isExporting && <h2 className="text-h2 font-display font-bold mt-8 mb-4 border-b pb-2" style={{ color: "var(--color-navy)" }}>1. Executive Summary</h2>}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <KpiCard label="Projected ROI (36 mo)" value={roi} tint="roi" trend={{ direction: "up", value: "18%" }} icon={<TrendingUp size={20} />} />
+            <KpiCard label="Projected ROI (36 mo)" value={roi} tint="roi" icon={<TrendingUp size={20} />} />
             <KpiCard label="Annual Net Benefit" value={cost} tint="budget" icon={<DollarSign size={20} />} />
             <KpiCard label="Payback Period" value={time} tint="maturity" icon={<Clock size={20} />} />
           </div>
