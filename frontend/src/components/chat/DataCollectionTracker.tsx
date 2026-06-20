@@ -8,6 +8,7 @@ import {
   Users,
   GraduationCap,
   Cpu,
+  Lightbulb,
   CheckCircle2,
   Circle,
 } from "lucide-react";
@@ -18,7 +19,7 @@ interface FieldStatus {
   description: string;
   unit: string;
   collected: boolean;
-  value: number | null;
+  value: number | string | null;
   raw_answer: string | null;
 }
 
@@ -42,10 +43,15 @@ const FIELD_ICONS: Record<string, React.ReactNode> = {
   ai_adoption_level: <Users size={16} />,
   employee_training_hrs: <GraduationCap size={16} />,
   num_deployments: <Cpu size={16} />,
+  use_case: <Lightbulb size={16} />,
 };
 
-function formatValue(key: string, value: number | null): string {
-  if (value === null) return "—";
+function formatValue(key: string, value: number | string | null): string {
+  if (value === null || value === undefined) return "—";
+  // Text fields (use_case)
+  if (typeof value === 'string') {
+    return value.length > 30 ? value.slice(0, 30) + '…' : value;
+  }
   switch (key) {
     case "ai_investment_usd":
       if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;

@@ -17,8 +17,8 @@ export class ChatMessage {
  * Each field maps directly to a feature required by build_inference_row() in the ML pipeline.
  */
 export class ValidatedField {
-  @Prop({ required: true })
-  value: number;
+  @Prop({ required: true, type: Object })
+  value: number | string; // number for numeric ML features, string for text fields (use_case)
 
   @Prop({ required: true })
   raw_answer: string; // The user's original text that was parsed

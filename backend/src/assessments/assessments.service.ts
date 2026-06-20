@@ -12,19 +12,26 @@ import { VendorsService } from '../vendors/vendors.service';
 
 // ── ML Feature Definitions ──────────────────────────────────────
 // Maps directly to build_inference_row() in ml/feature_engineering.py
-// These are the 6 fields the chat MUST collect.
+// These are the 7 fields the chat MUST collect.
 
 export interface MlFieldDefinition {
   key: string;
   label: string;            // Human-readable label for the frontend tracker
   description: string;      // What to ask about
-  type: 'float' | 'int';
-  min: number;
-  max: number;
+  type: 'float' | 'int' | 'text';  // text for descriptive fields like use_case
+  min?: number;
+  max?: number;
   unit: string;
   promptHint: string;       // Hint for the LLM to ask the right question
   fallbackRanges: string;   // Standardized ranges to offer when user doesn't know exact value
 }
+
+// Valid industries for the ML model (must match INDUSTRY_ORDER in ml/feature_engineering.py)
+export const VALID_INDUSTRIES = [
+  'Financial Services', 'Healthcare', 'Technology', 'Retail',
+  'Manufacturing', 'Logistics', 'Energy', 'Education',
+  'Agriculture', 'Telecom'
+];
 
 export const REQUIRED_ML_FIELDS: MlFieldDefinition[] = [
   {
@@ -92,6 +99,15 @@ export const REQUIRED_ML_FIELDS: MlFieldDefinition[] = [
     unit: 'count',
     promptHint: 'Ask how many AI or ML models/systems they currently have running in production.',
     fallbackRanges: 'None yet (use 0) | 1–3 small tools (use 2) | 4–10 systems (use 7) | 10–25 across departments (use 18) | 25+ enterprise-wide (use 35)'
+  },
+  {
+    key: 'use_case',
+    label: 'AI Use Case',
+    description: 'Brief description of the specific AI use case, business problem, or workflow they want to solve',
+    type: 'text',
+    unit: 'description',
+    promptHint: 'Ask what specific business problem, workflow, or use case they want to solve with AI. Get a concrete description (e.g., "automate medical image diagnosis", "predict customer churn", "optimize supply chain routing").',
+    fallbackRanges: 'Customer-facing AI (chatbots, recommendations) | Internal automation (process, workflow) | Analytics & prediction (forecasting, risk) | Content & creative (generation, synthesis) | Domain-specific (medical, legal, financial)'
   }
 ];
 
@@ -101,9 +117,12 @@ const REQUIRED_FIELD_KEYS = REQUIRED_ML_FIELDS.map(f => f.key);
 // Lightweight, structured output call that ONLY targets missing fields.
 
 function buildExtractionPrompt(chatTranscript: string, missingFields: MlFieldDefinition[]): string {
-  const fieldDescriptions = missingFields.map(f =>
-    `- "${f.key}": ${f.description}. Type: ${f.type}. Valid range: ${f.min}–${f.max}. Unit: ${f.unit}. Fallback ranges: ${f.fallbackRanges}.`
-  ).join('\n');
+  const fieldDescriptions = missingFields.map(f => {
+    if (f.type === 'text') {
+      return `- "${f.key}": ${f.description}. Type: text (string). Unit: ${f.unit}.`;
+    }
+    return `- "${f.key}": ${f.description}. Type: ${f.type}. Valid range: ${f.min}–${f.max}. Unit: ${f.unit}. Fallback ranges: ${f.fallbackRanges}.`;
+  }).join('\n');
 
   return `You are a precise data extraction engine. Analyze the following chat transcript and extract ONLY the fields listed below if the user has provided enough information to determine them.
 
@@ -112,7 +131,8 @@ ${fieldDescriptions}
 
 IMPORTANT RULES:
 - Return ONLY a JSON object with the fields you could extract.
-- Each extracted field must have: "value" (number), "raw_answer" (the exact user text you based this on), "confidence" ("high" or "low").
+- For numeric fields: each extracted field must have "value" (number), "raw_answer" (the exact user text you based this on), "confidence" ("high" or "low").
+- For text fields (like use_case): use "value" (string — a concise summary of what the user described), "raw_answer" (the exact user text), "confidence" ("high" or "low").
 - For automation_rate and ai_adoption_level: convert percentages to decimal (e.g., 30% → 0.3).
 - For ai_investment_usd: convert any currency mentions to USD (1 lakh INR ≈ 1,200 USD, 1 crore INR ≈ 120,000 USD, "50k" → 50000, "2M" → 2000000).
 - If the user selected a RANGE instead of an exact number (e.g., "$50K–$250K" or "a few departments"), use the median value specified in the fallback ranges above.
@@ -371,7 +391,14 @@ export class AssessmentsService {
   /**
    * Validates a single field value against the ML model's expected range.
    */
-  private validateField(fieldDef: MlFieldDefinition, rawValue: any): { is_valid: boolean; value: number } {
+  private validateField(fieldDef: MlFieldDefinition, rawValue: any): { is_valid: boolean; value: number | string } {
+    // Text fields: just validate non-empty
+    if (fieldDef.type === 'text') {
+      const strValue = String(rawValue || '').trim();
+      return { is_valid: strValue.length > 0, value: strValue };
+    }
+
+    // Numeric fields
     let value = typeof rawValue === 'string' ? parseFloat(rawValue) : Number(rawValue);
 
     if (isNaN(value)) {
@@ -384,7 +411,7 @@ export class AssessmentsService {
     }
 
     // Check if within valid range (with small tolerance)
-    const isWithinRange = value >= fieldDef.min && value <= fieldDef.max;
+    const isWithinRange = value >= (fieldDef.min ?? 0) && value <= (fieldDef.max ?? Infinity);
 
     if (!isWithinRange) {
       // Auto-correct common mistakes
@@ -395,8 +422,8 @@ export class AssessmentsService {
         }
       }
       // Re-check after correction
-      if (value < fieldDef.min) value = fieldDef.min;
-      if (value > fieldDef.max) value = fieldDef.max;
+      if (fieldDef.min !== undefined && value < fieldDef.min) value = fieldDef.min;
+      if (fieldDef.max !== undefined && value > fieldDef.max) value = fieldDef.max;
     }
 
     return { is_valid: true, value };
@@ -438,6 +465,74 @@ export class AssessmentsService {
       k => validatedFields[k]?.is_valid
     ).length;
     return Math.round((collectedCount / REQUIRED_FIELD_KEYS.length) * 100);
+  }
+
+  /**
+   * Infers the target industry for the ML model from assessment context.
+   * Uses LLM to map (project_name + department + use_case) → one of the 10 valid industries.
+   * A tech company building healthcare AI → "Healthcare", not "Technology".
+   */
+  async inferTargetIndustry(projectName: string, department: string, useCase: string): Promise<string> {
+    const validList = VALID_INDUSTRIES.join(', ');
+
+    const prompt = `You are a classification engine. Given the following AI project context, determine which SINGLE industry category this project targets. The industry should reflect the DOMAIN the AI is being applied to, NOT the company's own industry.
+
+PROJECT NAME: ${projectName || 'N/A'}
+DEPARTMENT: ${department || 'N/A'}
+AI USE CASE: ${useCase || 'N/A'}
+
+VALID INDUSTRIES (pick exactly one):
+${validList}
+
+Return ONLY the industry name from the list above, nothing else. No quotes, no explanation.`;
+
+    try {
+      const result = await this.llmService.generateResponse([
+        { role: 'user', content: prompt }
+      ], true);
+
+      const cleaned = result.trim().replace(/['"]/g, '');
+
+      // Find the closest match from valid industries
+      const exactMatch = VALID_INDUSTRIES.find(
+        i => i.toLowerCase() === cleaned.toLowerCase()
+      );
+      if (exactMatch) return exactMatch;
+
+      // Partial match (e.g., LLM returns "healthcare" instead of "Healthcare")
+      const partialMatch = VALID_INDUSTRIES.find(
+        i => cleaned.toLowerCase().includes(i.toLowerCase()) ||
+             i.toLowerCase().includes(cleaned.toLowerCase())
+      );
+      if (partialMatch) return partialMatch;
+
+      this.logger.warn(`LLM returned unrecognized industry "${cleaned}", falling back to keyword matching`);
+    } catch (err: any) {
+      this.logger.warn(`Industry inference LLM call failed: ${err.message}, using keyword fallback`);
+    }
+
+    // Keyword-based fallback
+    const context = `${projectName} ${department} ${useCase}`.toLowerCase();
+    const keywordMap: Record<string, string[]> = {
+      'Healthcare': ['health', 'medical', 'clinical', 'patient', 'hospital', 'pharma', 'diagnosis', 'ehr', 'imaging'],
+      'Financial Services': ['finance', 'banking', 'insurance', 'trading', 'fintech', 'payment', 'credit', 'loan', 'investment'],
+      'Retail': ['retail', 'ecommerce', 'e-commerce', 'shopping', 'store', 'inventory', 'customer', 'product recommendation'],
+      'Manufacturing': ['manufacturing', 'factory', 'production', 'quality control', 'assembly', 'industrial'],
+      'Logistics': ['logistics', 'supply chain', 'shipping', 'warehouse', 'delivery', 'fleet', 'routing', 'transport'],
+      'Energy': ['energy', 'oil', 'gas', 'solar', 'wind', 'power', 'grid', 'utility', 'renewable'],
+      'Education': ['education', 'learning', 'student', 'university', 'school', 'training', 'edtech', 'curriculum'],
+      'Agriculture': ['agriculture', 'farming', 'crop', 'livestock', 'agritech', 'soil', 'harvest', 'irrigation'],
+      'Telecom': ['telecom', 'network', 'wireless', '5g', 'broadband', 'mobile', 'connectivity'],
+      'Technology': ['software', 'saas', 'platform', 'cloud', 'devops', 'api', 'data platform'],
+    };
+
+    for (const [industry, keywords] of Object.entries(keywordMap)) {
+      if (keywords.some(kw => context.includes(kw))) {
+        return industry;
+      }
+    }
+
+    return 'Technology'; // Ultimate fallback
   }
 
   /**
@@ -584,12 +679,12 @@ export class AssessmentsService {
       // Use validated_fields directly — NO hardcoded defaults.
       // The fields are guaranteed to exist because analyzeAssessment() checks completeness.
       const extractedFeatures = {
-        ai_investment_usd: validatedFields.ai_investment_usd?.value,
-        ai_maturity_score: validatedFields.ai_maturity_score?.value,
-        automation_rate: validatedFields.automation_rate?.value,
-        ai_adoption_level: validatedFields.ai_adoption_level?.value,
-        employee_training_hrs: validatedFields.employee_training_hrs?.value,
-        num_deployments: validatedFields.num_deployments?.value,
+        ai_investment_usd: Number(validatedFields.ai_investment_usd?.value),
+        ai_maturity_score: Number(validatedFields.ai_maturity_score?.value),
+        automation_rate: Number(validatedFields.automation_rate?.value),
+        ai_adoption_level: Number(validatedFields.ai_adoption_level?.value),
+        employee_training_hrs: Number(validatedFields.employee_training_hrs?.value),
+        num_deployments: Number(validatedFields.num_deployments?.value),
       };
 
       this.logger.log(`Using validated ML features: ${JSON.stringify(extractedFeatures)}`);
@@ -612,9 +707,20 @@ export class AssessmentsService {
         { $set: { extracted_data: { ...assessment.extracted_data, ...extractedFeatures } } }
       );
 
+      // ── Infer target industry from assessment context ────────
+      // Don't use user.industry — a tech company might be building healthcare AI.
+      // Instead, infer from project_name + department + use_case.
+      const useCase = validatedFields.use_case?.value as string || '';
+      const inferredIndustry = await this.inferTargetIndustry(
+        assessment.project_name,
+        assessment.department || '',
+        useCase
+      );
+      this.logger.log(`Inferred target industry: ${inferredIndustry} (from project: ${assessment.project_name}, dept: ${assessment.department}, use_case: ${useCase})`);
+
       // ── Call ML Integration ───────────────────────────────────
       const features = {
-        industry: assessment.user?.industry || 'Technology',
+        industry: inferredIndustry,
         country: assessment.user?.country || 'US',
         budget: extractedFeatures.ai_investment_usd,
         maturity: extractedFeatures.ai_maturity_score,
