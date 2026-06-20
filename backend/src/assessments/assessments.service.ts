@@ -75,7 +75,7 @@ export const REQUIRED_ML_FIELDS: MlFieldDefinition[] = [
     min: 0.0,
     max: 1.0,
     unit: 'ratio (0-1)',
-    promptHint: 'Ask how widely AI has been adopted across the organization. Map responses: "one team/pilot" → 0.1-0.2, "a few departments" → 0.3-0.4, "multiple departments" → 0.5-0.6, "most of the company" → 0.7-0.8, "company-wide" → 0.9-1.0.',
+    promptHint: 'Ask the user directly what percentage of their overall workforce actively uses AI tools. Do not ask for department names, ask for a numerical percentage.',
     fallbackRanges: 'One team or pilot project (use 0.15) | A few departments (use 0.35) | Multiple departments (use 0.55) | Most of the company (use 0.75) | Company-wide (use 0.9)'
   },
   {
@@ -99,6 +99,15 @@ export const REQUIRED_ML_FIELDS: MlFieldDefinition[] = [
     unit: 'count',
     promptHint: 'Ask how many AI or ML models/systems they currently have running in production.',
     fallbackRanges: 'None yet (use 0) | 1–3 small tools (use 2) | 4–10 systems (use 7) | 10–25 across departments (use 18) | 25+ enterprise-wide (use 35)'
+  },
+  {
+    key: 'target_market',
+    label: 'Target Market',
+    description: 'The primary country or market they are targeting for this AI deployment',
+    type: 'text',
+    unit: 'country',
+    promptHint: 'Ask which specific country or target market they are primarily focusing on for this AI deployment. We need to know the specific market to tailor the ROI projections.',
+    fallbackRanges: 'United States (US) | India (IN) | United Kingdom (GB) | China (CN) | Germany (DE) | Japan (JP) | Global (US)'
   },
   {
     key: 'use_case',
@@ -132,9 +141,9 @@ ${fieldDescriptions}
 IMPORTANT RULES:
 - Return ONLY a JSON object with the fields you could extract.
 - For numeric fields: each extracted field must have "value" (number), "raw_answer" (the exact user text you based this on), "confidence" ("high" or "low").
-- For text fields (like use_case): use "value" (string — a concise summary of what the user described), "raw_answer" (the exact user text), "confidence" ("high" or "low").
+- For text fields (like use_case or target_market): use "value" (string — a concise summary of what the user described), "raw_answer" (the exact user text), "confidence" ("high" or "low").
 - For automation_rate and ai_adoption_level: convert percentages to decimal (e.g., 30% → 0.3).
-- For ai_investment_usd: convert any currency mentions to USD (1 lakh INR ≈ 1,200 USD, 1 crore INR ≈ 120,000 USD, "50k" → 50000, "2M" → 2000000).
+- For ai_investment_usd: IF the user provides currency in INR, you MUST convert it to USD before saving the numeric value! (1 lakh INR ≈ 1,200 USD, 1 crore INR ≈ 120,000 USD). "30lakhs inr" → 36000.
 - If the user selected a RANGE instead of an exact number (e.g., "$50K–$250K" or "a few departments"), use the median value specified in the fallback ranges above.
 - Do NOT guess or fabricate values. If the user hasn't mentioned a field, omit it entirely.
 - If a value falls outside the valid range, still extract it but note it.
@@ -468,6 +477,32 @@ export class AssessmentsService {
   }
 
   /**
+   * Infers the target country/market code for the ML model from assessment context.
+   */
+  async inferTargetCountry(targetMarketDesc: string): Promise<string> {
+    const validCountries = ["US", "CN", "GB", "DE", "JP", "IN", "FR", "CA", "AU", "BR"];
+    const prompt = `You are a classification engine. Map the following user description of their target market to the closest valid 2-letter ISO country code.
+    
+TARGET MARKET DESC: ${targetMarketDesc || 'N/A'}
+
+VALID COUNTRY CODES (pick exactly one):
+${validCountries.join(', ')}
+
+Return ONLY the 2-letter code from the list above, nothing else. No quotes. If it's globally focused or unknown, default to US.`;
+
+    try {
+      const result = await this.llmService.generateResponse([{ role: 'user', content: prompt }], true);
+      const cleaned = result.trim().replace(/['"]/g, '').toUpperCase();
+      if (validCountries.includes(cleaned)) return cleaned;
+      const partialMatch = validCountries.find(c => cleaned.includes(c));
+      if (partialMatch) return partialMatch;
+    } catch (err: any) {
+      this.logger.warn(`Country inference LLM call failed: ${err.message}`);
+    }
+    return "US"; // Default
+  }
+
+  /**
    * Infers the target industry for the ML model from assessment context.
    * Uses LLM to map (project_name + department + use_case) → one of the 10 valid industries.
    * A tech company building healthcare AI → "Healthcare", not "Technology".
@@ -711,17 +746,19 @@ Return ONLY the industry name from the list above, nothing else. No quotes, no e
       // Don't use user.industry — a tech company might be building healthcare AI.
       // Instead, infer from project_name + department + use_case.
       const useCase = validatedFields.use_case?.value as string || '';
+      const targetMarket = validatedFields.target_market?.value as string || '';
       const inferredIndustry = await this.inferTargetIndustry(
         assessment.project_name,
         assessment.department || '',
         useCase
       );
-      this.logger.log(`Inferred target industry: ${inferredIndustry} (from project: ${assessment.project_name}, dept: ${assessment.department}, use_case: ${useCase})`);
+      const inferredCountry = await this.inferTargetCountry(targetMarket);
+      this.logger.log(`Inferred target industry: ${inferredIndustry}, target country: ${inferredCountry}`);
 
       // ── Call ML Integration ───────────────────────────────────
       const features = {
         industry: inferredIndustry,
-        country: assessment.user?.country || 'US',
+        country: inferredCountry,
         budget: extractedFeatures.ai_investment_usd,
         maturity: extractedFeatures.ai_maturity_score,
         ...extractedFeatures
