@@ -60,7 +60,17 @@ export class AssessmentsService {
       messages: [
         {
           role: 'system',
-          content: 'You are StratosAI, an elite Corporate AI Strategy Advisor. You have a strict limit of 5-7 questions to interview the user. You MUST ask about their estimated AI budget (in USD) and their current AI maturity level (1-10) as early as possible. Do not waste questions on pleasantries or minor clarifications. Ask ONE concise question at a time. Prioritize gathering the budget and maturity metrics.',
+          content: `You are StratosAI, an elite Corporate AI Strategy Advisor. You have exactly 7 questions to gather the data needed for an ML-powered ROI prediction. Ask ONE clear question at a time. You MUST cover ALL of the following data points across your 7 questions:
+
+1. What is their total planned AI budget/investment in USD?
+2. On a scale of 1-10, what is their current AI maturity level? (1=no AI, 10=AI-native)
+3. What percentage of their workflows are currently automated? (0-100%)
+4. How many hours of AI/ML training do employees receive per year?
+5. How many AI systems/models do they currently have deployed in production?
+6. How widely has AI been adopted across the organization? (e.g., one team, multiple departments, company-wide)
+7. What is the specific use case or business problem they want to solve with AI?
+
+Be conversational but efficient. Do NOT ask vague or redundant questions. Each question must target one of the data points above. If the user gives a vague answer, briefly clarify and move on.`,
           timestamp: new Date()
         },
         initialMessage
@@ -152,17 +162,19 @@ export class AssessmentsService {
       // 1. Extract features from chat history using LLM
       try {
         const chatPrompt = assessment.chat_history.map((m: any) => `${m.role}: ${m.content}`).join('\n');
-        const extractionPrompt = `Given the following chat transcript, extract these values into a strict JSON object:
-- "ai_investment_usd": total AI investment amount in USD (number). If not explicitly mentioned, estimate based on company scale or default to 500000.
-- "ai_maturity_score": AI maturity score from 1.0 to 10.0 (number). Default to 3.0.
-- "automation_rate": estimated automation rate from 0.0 to 1.0 (number). Default to 0.2.
-- "num_deployments": number of existing AI deployments (integer). Default to 1.
-- "employee_training_hrs": hours of training (number). Default to 40.
+        const extractionPrompt = `You are a data extraction engine. Given the following chat transcript between an AI advisor and a corporate user, extract these values into a strict JSON object. Use contextual clues to infer values if they are not stated explicitly.
+
+- "ai_investment_usd": total AI investment/budget in USD (number). If mentioned in lakhs/crores, convert to USD (1 lakh = ~1200 USD, 1 crore = ~120000 USD). If mentioned in thousands (e.g. "50k"), expand to full number. Default to 500000 if completely unclear.
+- "ai_maturity_score": AI maturity score from 1.0 to 10.0 (number). If user says "beginner" use 2.0, "intermediate" use 5.0, "advanced" use 8.0. Default to 3.0.
+- "automation_rate": what fraction of workflows are automated, from 0.0 to 1.0 (number). If user says "20%" use 0.2, "half" use 0.5. Default to 0.2.
+- "num_deployments": number of existing AI/ML systems in production (integer). If user says "none" use 0, "a few" use 3. Default to 1.
+- "employee_training_hrs": annual AI/ML training hours per employee (number). If user says "a week" use 40, "a day" use 8. Default to 40.
+- "ai_adoption_level": how widely AI is adopted across the org, from 0.0 to 1.0 (number). If "one team" use 0.2, "multiple departments" use 0.5, "company-wide" use 0.8. Default to 0.3.
 
 Chat Transcript:
 ${chatPrompt}
 
-Return ONLY raw JSON.`;
+Return ONLY raw JSON, no markdown formatting.`;
 
         const extractionResult = await this.llmService.generateResponse([
           { role: 'user', content: extractionPrompt }
@@ -185,6 +197,9 @@ Return ONLY raw JSON.`;
           data: {
             ai_budget: assessment.ai_budget,
             ai_maturity: assessment.ai_maturity,
+            automation_rate: extracted.automation_rate || 0.2,
+            employee_training_hours: extracted.employee_training_hrs || 40,
+            num_ai_deployments: extracted.num_deployments || 1,
           }
         });
 
