@@ -118,7 +118,7 @@ export function TopNav() {
       {/* Right Actions */}
       <div className="flex items-center gap-4">
         {/* Search Input */}
-        <div className="hidden md:flex items-center relative" ref={searchRef}>
+        <div className="flex items-center relative" ref={searchRef}>
           <Search size={18} className="absolute left-4 text-gray-400" />
           <input
             type="text"
@@ -128,8 +128,8 @@ export function TopNav() {
               setIsSearchOpen(true);
             }}
             onFocus={() => setIsSearchOpen(true)}
-            placeholder="Search assessments, vendors..."
-            className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
+            placeholder="Search..."
+            className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-[150px] md:w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
           />
 
           {isSearchOpen && searchQuery.length > 1 && (
@@ -163,15 +163,17 @@ export function TopNav() {
                     <div>
                       <h4 className="px-3 py-1 text-xs font-bold text-gray-400 uppercase tracking-wider">Vendors</h4>
                       {searchResults.vendors?.map((item: any) => (
-                        <Link
-                          href={`/vendors`}
+                        <a
+                          href={item.website_url || '/vendors'}
+                          target={item.website_url ? "_blank" : undefined}
+                          rel={item.website_url ? "noopener noreferrer" : undefined}
                           key={item._id}
                           onClick={() => setIsSearchOpen(false)}
                           className="flex flex-col px-3 py-2 hover:bg-black/5 rounded-xl transition-colors cursor-pointer"
                         >
                           <span className="text-sm font-medium text-black">{item.name}</span>
                           <span className="text-xs text-gray-500">{item.category}</span>
-                        </Link>
+                        </a>
                       ))}
                     </div>
                   )}
