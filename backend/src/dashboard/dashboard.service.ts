@@ -23,7 +23,7 @@ export class DashboardService {
     });
 
     return {
-      totalProjectedRoi: `$${totalProjectedRoi.toLocaleString()}`,
+      totalProjectedRoi: new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalProjectedRoi),
       departmentsEngaged: departmentsEngaged.toLocaleString(),
       completedProjects: completedProjects.toLocaleString(),
     };
