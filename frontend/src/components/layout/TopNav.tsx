@@ -129,7 +129,7 @@ export function TopNav() {
             }}
             onFocus={() => setIsSearchOpen(true)}
             placeholder="Search..."
-            className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-[150px] md:w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
+            className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-[120px] sm:w-[150px] md:w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
           />
 
           {isSearchOpen && searchQuery.length > 1 && (
