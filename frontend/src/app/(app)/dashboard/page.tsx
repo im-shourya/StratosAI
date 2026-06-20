@@ -134,7 +134,7 @@ export default function DashboardPage() {
               <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md mb-8">
                 ✨ Insights
               </span>
-              <h2 className="text-6xl font-display font-bold mb-4 tracking-tight">75%</h2>
+              <h2 className="text-5xl md:text-6xl font-display font-bold mb-4 tracking-tight">75%</h2>
               <p className="text-lg font-medium leading-snug mb-2">
                 Implementation rate increased by 4% compared to last week.
               </p>

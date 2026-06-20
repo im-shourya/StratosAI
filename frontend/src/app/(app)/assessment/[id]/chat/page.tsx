@@ -250,8 +250,14 @@ export default function ChatPage() {
 
       {/* Mobile tracker (slide-up panel) */}
       {showTracker && (
-        <div className="md:hidden fixed inset-x-0 bottom-0 z-50 p-4 animate-in slide-in-from-bottom duration-300">
-          <DataCollectionTracker completionStatus={completionStatus} />
+        <div className="md:hidden fixed inset-x-0 bottom-0 z-50 p-4 animate-in slide-in-from-bottom duration-300 bg-white/90 backdrop-blur-xl rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] border-t border-gray-100 pb-24 max-h-[75vh] flex flex-col">
+          <div className="flex justify-between items-center mb-4 shrink-0">
+             <h3 className="font-semibold text-lg" style={{ color: "var(--color-navy)" }}>Data Collection</h3>
+             <button onClick={() => setShowTracker(false)} className="text-gray-400 hover:text-gray-600 font-medium text-sm px-2 py-1 bg-gray-100 rounded-full">Close</button>
+          </div>
+          <div className="overflow-y-auto flex-1 -mx-2 px-2 pb-8">
+             <DataCollectionTracker completionStatus={completionStatus} />
+          </div>
         </div>
       )}
     </div>
