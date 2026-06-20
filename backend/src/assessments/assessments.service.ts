@@ -738,6 +738,7 @@ Return ONLY the industry name from the list above, nothing else. No quotes, no e
       const scenarios   = mlResults.scenarios || {};
       const readiness   = mlResults.readiness || {};
       const tfScore     = mlResults.transformation_score || 0;
+      const llmRec      = mlResults.llm_recommendation || {};
 
       // Save ML results to predictions table and update Assessment using a Transaction
       await this.prisma.$transaction([
@@ -764,6 +765,12 @@ Return ONLY the industry name from the list above, nothing else. No quotes, no e
             scenario_cautious_roi: scenarios.cautious?.roi_pct || 0,
             scenario_aggressive_roi: scenarios.aggressive?.roi_pct || 0,
             board_recommendation: scenarios.board_recommendation || '',
+            llm_summary: llmRec.summary || '',
+            llm_top_risks: Array.isArray(llmRec.top_risks) ? llmRec.top_risks : [],
+            llm_quick_wins: Array.isArray(llmRec.quick_wins) ? llmRec.quick_wins : [],
+            llm_twelve_month_roadmap: Array.isArray(llmRec.twelve_month_roadmap) ? llmRec.twelve_month_roadmap : [],
+            llm_budget_verdict: llmRec.budget_verdict || '',
+            llm_overall_risk: llmRec.overall_risk || '',
             model_version: '2.0.0',
             predicted_at: new Date()
           },
@@ -789,6 +796,12 @@ Return ONLY the industry name from the list above, nothing else. No quotes, no e
             scenario_cautious_roi: scenarios.cautious?.roi_pct || 0,
             scenario_aggressive_roi: scenarios.aggressive?.roi_pct || 0,
             board_recommendation: scenarios.board_recommendation || '',
+            llm_summary: llmRec.summary || '',
+            llm_top_risks: Array.isArray(llmRec.top_risks) ? llmRec.top_risks : [],
+            llm_quick_wins: Array.isArray(llmRec.quick_wins) ? llmRec.quick_wins : [],
+            llm_twelve_month_roadmap: Array.isArray(llmRec.twelve_month_roadmap) ? llmRec.twelve_month_roadmap : [],
+            llm_budget_verdict: llmRec.budget_verdict || '',
+            llm_overall_risk: llmRec.overall_risk || '',
             model_version: '2.0.0'
           }
         }),

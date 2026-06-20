@@ -185,13 +185,18 @@ export default function ReportPage() {
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <GlassCard elevated>
-              <h3 className="text-h3 font-display font-semibold mb-3" style={{ color: "var(--color-navy)" }}>Analysis</h3>
+              <h3 className="text-h3 font-display font-semibold mb-3" style={{ color: "var(--color-navy)" }}>Strategic Analysis</h3>
               <p className="text-body-sm leading-relaxed mb-4" style={{ color: "var(--color-text-secondary)" }}>
-                The <strong>{data.project_name}</strong> project in the <strong>{data.department || 'organization'}</strong> is well-positioned to leverage AI. Based on the analysis of {data.extracted_data?.num_ai_deployments || 0} existing deployments, the readiness level is evaluated as <strong>{p.readiness_level || 'MEDIUM'}</strong>.
+                {p.llm_summary || `The ${data.project_name} project in the ${data.department || 'organization'} is well-positioned to leverage AI. Based on the analysis of ${data.extracted_data?.num_ai_deployments || 0} existing deployments, the readiness level is evaluated as ${p.readiness_level || 'MEDIUM'}.`}
               </p>
-              <p className="text-body-sm leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>
-                The overall transformation score is <strong>{Number(p.transformation_score || 50).toFixed(1)}/100</strong>. We recommend proceeding with the allocated budget of ${Number(data.ai_budget || 0).toLocaleString()} to capture the projected {roi} return on investment.
-              </p>
+              {p.llm_quick_wins && p.llm_quick_wins.length > 0 && (
+                <>
+                  <h4 className="text-sm font-semibold mb-2 mt-4 text-[var(--color-navy)]">Quick Wins:</h4>
+                  <ul className="list-disc pl-5 space-y-1 text-sm text-[var(--color-text-secondary)]">
+                    {p.llm_quick_wins.map((win: string, i: number) => <li key={i}>{win}</li>)}
+                  </ul>
+                </>
+              )}
             </GlassCard>
             <MaturityBar currentTier={p.maturity_tier || 1} peerAvg={2.8} />
           </div>
@@ -232,11 +237,17 @@ export default function ReportPage() {
               <RiskRadar initialData={riskData} />
             </GlassCard>
             <GlassCard>
-               <h3 className="text-h3 font-display font-semibold mb-3 text-[var(--color-navy)]">Mitigation Strategy</h3>
-               <p className="text-body-sm leading-relaxed mb-4 text-[var(--color-text-secondary)]">
-                 The primary area of concern is <strong>{riskData.reduce((prev, current) => (prev.score > current.score) ? prev : current).label}</strong> risk.
-                 We recommend allocating 20% of your initial budget towards mitigating this specific risk vector before scaling deployment.
-               </p>
+               <h3 className="text-h3 font-display font-semibold mb-3 text-[var(--color-navy)]">Top Risks & Mitigation</h3>
+               {p.llm_top_risks && p.llm_top_risks.length > 0 ? (
+                 <ul className="list-disc pl-5 space-y-2 text-sm text-[var(--color-text-secondary)]">
+                   {p.llm_top_risks.map((risk: string, i: number) => <li key={i}>{risk}</li>)}
+                 </ul>
+               ) : (
+                 <p className="text-body-sm leading-relaxed mb-4 text-[var(--color-text-secondary)]">
+                   The primary area of concern is <strong>{riskData.reduce((prev, current) => (prev.score > current.score) ? prev : current).label}</strong> risk.
+                   We recommend allocating 20% of your initial budget towards mitigating this specific risk vector before scaling deployment.
+                 </p>
+               )}
             </GlassCard>
           </div>
         </div>
@@ -260,6 +271,13 @@ export default function ReportPage() {
                    <span className="font-mono font-medium text-[var(--color-success)]">+${Number(p.annual_revenue_impact || 0).toLocaleString()}</span>
                  </div>
               </div>
+              {p.llm_budget_verdict && (
+                <div className="mt-6 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                  <p className="text-sm text-blue-900 leading-relaxed font-medium">
+                    {p.llm_budget_verdict}
+                  </p>
+                </div>
+              )}
             </GlassCard>
           </div>
         </div>
@@ -297,6 +315,21 @@ export default function ReportPage() {
             <h3 className="text-h3 font-display font-semibold mb-4 text-[var(--color-navy)]">Recommended Timeline</h3>
             <div className="relative border-l-2 border-[var(--color-primary)] ml-3 space-y-8 py-2">
                {(() => {
+                 if (p.llm_twelve_month_roadmap && p.llm_twelve_month_roadmap.length > 0) {
+                   return p.llm_twelve_month_roadmap.map((step: string, i: number) => {
+                     const splitIndex = step.indexOf(':');
+                     const title = splitIndex > 0 ? step.substring(0, splitIndex) : `Phase ${i+1}`;
+                     const desc = splitIndex > 0 ? step.substring(splitIndex + 1).trim() : step;
+                     return (
+                       <div key={i} className="relative pl-6">
+                         <div className={`absolute w-4 h-4 rounded-full -left-[9px] top-1 ${i === 0 ? 'bg-[var(--color-primary)] shadow-[0_0_0_4px_rgba(41,128,185,0.2)]' : 'bg-gray-300 border-2 border-white'}`}></div>
+                         <h4 className="font-bold text-[var(--color-navy)]">{title}</h4>
+                         <p className="text-sm text-[var(--color-text-secondary)] mt-1">{desc}</p>
+                       </div>
+                     );
+                   });
+                 }
+
                  const rec = p.board_recommendation || "";
                  let phases = [];
                  if (rec === "APPROVE AGGRESSIVE EXPANSION") {

@@ -98,6 +98,14 @@ model Prediction {
   maturity_tier            Int?       @db.Integer
   peer_percentile          Decimal?   @db.Decimal
   
+  // LLM Recommendations
+  llm_summary              String?    @db.Text
+  llm_top_risks            String[]
+  llm_quick_wins           String[]
+  llm_twelve_month_roadmap String[]
+  llm_budget_verdict       String?    @db.Text
+  llm_overall_risk         String?    @db.VarChar
+  
   model_version            String     @default("1.0") @db.VarChar
   predicted_at             DateTime   @default(now()) @db.Timestamp(6)
   

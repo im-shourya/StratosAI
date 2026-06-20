@@ -51,6 +51,11 @@ def build_prompt(company_profile: dict, ml_results: dict) -> str:
     industry   = company_profile.get("industry",        "Technology")
     investment = company_profile.get("ai_investment_usd", 1_000_000)
     maturity   = company_profile.get("ai_maturity_score", 5.0)
+    use_case   = company_profile.get("use_case",        "General AI adoption")
+    automation_rate = company_profile.get("automation_rate", 0)
+    adoption_level  = company_profile.get("ai_adoption_level", 0)
+    training_hrs    = company_profile.get("employee_training_hrs", 0)
+    deployments     = company_profile.get("num_deployments", 0)
 
     roi         = ml_results.get("roi", {})
     readiness   = ml_results.get("readiness", {})
@@ -67,11 +72,16 @@ def build_prompt(company_profile: dict, ml_results: dict) -> str:
     return f"""{SYSTEM_PROMPT}
 
 COMPANY PROFILE:
-  Industry:         {industry}
+  Target Industry:  {industry}
+  AI Use Case:      {use_case}
   AI Investment:    ${investment:,.0f}
   AI Maturity Score:{maturity}/10
   Maturity Tier:    {maturity_r.get('maturity_label', 'N/A')} (Tier {maturity_r.get('maturity_tier', '?')}/5)
   Peer Percentile:  {maturity_r.get('peer_percentile', 50)}th percentile
+  Automation Rate:  {automation_rate*100:.0f}%
+  AI Adoption Level:{adoption_level*100:.0f}%
+  Employee Training:{training_hrs} hrs/year
+  Deployments:      {deployments} systems in production
 
 ML MODEL PREDICTIONS:
   Predicted ROI (12M):       {roi.get('roi_12m', 'N/A')}%
