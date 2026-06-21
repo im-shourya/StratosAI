@@ -20,6 +20,15 @@ const INDUSTRIES = [
   { value: "Other", label: "Other" },
 ];
 
+const GOALS = [
+  { value: "Process Optimization", label: "Process Optimization" },
+  { value: "Cost Reduction", label: "Cost Reduction" },
+  { value: "Revenue Growth", label: "Revenue Growth" },
+  { value: "Risk Management", label: "Risk Management" },
+  { value: "Innovation/R&D", label: "Innovation/R&D" },
+  { value: "Other", label: "Other" },
+];
+
 const SIZES = ["<50", "50-200", "200-1000", "1000-5000", "5000+"];
 
 export default function OnboardingProfile() {
@@ -28,8 +37,10 @@ export default function OnboardingProfile() {
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
+    job_title: "",
     company_name: "",
     industry: "Technology",
+    primary_goal: "Process Optimization",
     country: "US",
     main_market_country: "Global"
   });
@@ -47,7 +58,11 @@ export default function OnboardingProfile() {
         body: JSON.stringify({
           first_name: formData.first_name,
           last_name: formData.last_name,
+          job_title: formData.job_title,
           company_name: formData.company_name,
+          industry: formData.industry,
+          primary_goal: formData.primary_goal,
+          company_size: selectedSize,
           country: formData.country,
           main_market_country: formData.main_market_country
         })
@@ -65,7 +80,7 @@ export default function OnboardingProfile() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative">
       <MeshBackground />
-      <GlassCard elevated className="max-w-lg w-full p-8">
+      <GlassCard elevated className="max-w-xl w-full p-8">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-body-sm font-medium" style={{ color: "var(--color-primary)" }}>Step 2 of 3</span>
         </div>
@@ -81,8 +96,16 @@ export default function OnboardingProfile() {
             <GlassInput label="First Name" name="first_name" value={formData.first_name} onChange={handleChange} placeholder="Jane" />
             <GlassInput label="Last Name" name="last_name" value={formData.last_name} onChange={handleChange} placeholder="Doe" />
           </div>
-          <GlassInput label="Company Name" name="company_name" value={formData.company_name} onChange={handleChange} placeholder="Acme Corp" />
-          <GlassSelect label="Industry" name="industry" value={formData.industry} onChange={handleChange} options={INDUSTRIES} />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <GlassInput label="Job Title" name="job_title" value={formData.job_title} onChange={handleChange} placeholder="CEO" />
+            <GlassInput label="Company Name" name="company_name" value={formData.company_name} onChange={handleChange} placeholder="Acme Corp" />
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <GlassSelect label="Industry" name="industry" value={formData.industry} onChange={handleChange} options={INDUSTRIES} />
+            <GlassSelect label="Primary Goal" name="primary_goal" value={formData.primary_goal} onChange={handleChange} options={GOALS} />
+          </div>
           
           <div className="grid grid-cols-2 gap-4">
             <GlassSelect label="Company Country" name="country" value={formData.country} onChange={handleChange} options={COUNTRIES} />
