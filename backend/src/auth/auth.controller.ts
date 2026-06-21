@@ -2,6 +2,7 @@ import { Controller, Post, Get, Put, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
+import { OAuthDto } from './dto/oauth.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -17,6 +18,11 @@ export class AuthController {
   @Post('login')
   async login(@Body() body: LoginDto) {
     return this.authService.login(body);
+  }
+
+  @Post('oauth')
+  async oauthLogin(@Body() body: OAuthDto) {
+    return this.authService.oauthLogin(body);
   }
 
   @UseGuards(JwtAuthGuard)

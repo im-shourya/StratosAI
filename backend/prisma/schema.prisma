@@ -12,8 +12,10 @@ model User {
   password_hash String       @db.VarChar
   first_name    String?      @db.VarChar(100)
   last_name     String?      @db.VarChar(100)
-  company_name  String       @db.VarChar(200)
-  industry      String?      @db.VarChar(100)
+  company_name        String       @db.VarChar(200)
+  job_title           String?      @db.VarChar(100)
+  primary_goal        String?      @db.VarChar(100)
+  industry            String?      @db.VarChar(100)
   company_size        String?      @db.VarChar(100)
   country             String?      @db.VarChar(100)
   main_market_country String?      @db.VarChar(100)

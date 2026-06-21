@@ -44,39 +44,19 @@ export default function SignupPage() {
     try {
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-      const idToken = await user.getIdToken();
       
-      // We would ideally send this idToken to the backend to authenticate,
-      // but for now we'll set a mock token or call our API to create/login the user.
-      const response = await fetchApi("/api/auth/signup", {
+      const response = await fetchApi("/api/auth/oauth", {
         method: "POST",
         body: JSON.stringify({ 
           email: user.email, 
-          password: user.uid, // Using UID as a password surrogate for OAuth users is a stopgap if backend doesn't support OAuth directly yet
-          is_oauth: true 
+          uid: user.uid 
         }),
       });
       localStorage.setItem("token", response.access_token);
-      setMessage("Account created! Redirecting...");
+      setMessage("Account accessed! Redirecting...");
       window.location.href = "/onboarding";
     } catch (error: any) {
-      // If user already exists, we might want to try login instead
-      if (error.message?.includes("already exists")) {
-        try {
-          const result = await signInWithPopup(auth, googleProvider);
-          const response = await fetchApi("/api/auth/login", {
-            method: "POST",
-            body: JSON.stringify({ email: result.user.email, password: result.user.uid }),
-          });
-          localStorage.setItem("token", response.access_token);
-          window.location.href = "/onboarding";
-          return;
-        } catch (loginError: any) {
-          setMessage(loginError.message || "Google sign-in failed");
-        }
-      } else {
-        setMessage(error.message || "Google sign-in failed");
-      }
+      setMessage(error.message || "Google sign-in failed");
     }
   };
 
