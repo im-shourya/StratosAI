@@ -121,22 +121,24 @@ export function TopNav() {
       <div className="flex items-center gap-4">
         {/* Search Input */}
         <div 
-          className={`items-center relative ${isMobileSearchVisible ? "flex absolute left-4 right-16 top-1/2 -translate-y-1/2 z-50 bg-white/95 p-1 rounded-full shadow-lg border border-gray-100" : "hidden md:flex"}`} 
+          className={isMobileSearchVisible ? "flex absolute left-4 right-16 top-0 bottom-0 z-50 items-center" : "hidden md:flex relative items-center"} 
           ref={searchRef}
         >
-          <Search size={18} className="absolute left-4 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setIsSearchOpen(true);
-            }}
-            onFocus={() => setIsSearchOpen(true)}
-            placeholder="Search..."
-            className="pl-11 pr-4 py-2.5 bg-white/50 border border-gray-200/60 rounded-full text-sm font-medium w-full md:w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-white transition-all shadow-inner"
-            autoFocus={isMobileSearchVisible}
-          />
+          <div className={`relative flex items-center w-full ${isMobileSearchVisible ? "bg-white/95 p-1 rounded-full shadow-xl border border-gray-100" : ""}`}>
+            <Search size={18} className="absolute left-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setIsSearchOpen(true);
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+              placeholder="Search..."
+              className="pl-11 pr-4 py-2.5 bg-[var(--glass-bg)] border border-[var(--glass-border-subtle)] rounded-full text-sm font-medium w-full md:w-[260px] focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:bg-[var(--glass-highlight)] transition-all shadow-inner"
+              autoFocus={isMobileSearchVisible}
+            />
+          </div>
 
           {isSearchOpen && searchQuery.length > 1 && (
             <div className="absolute top-full mt-2 w-full max-w-[400px] right-0 bg-white/95 backdrop-blur-3xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-white p-2 py-3 origin-top-right animate-in fade-in slide-in-from-top-2 duration-200 z-50 max-h-[400px] overflow-y-auto">
