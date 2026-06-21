@@ -114,6 +114,11 @@ export class LlmService {
           }
           history = validHistory;
 
+          // Gemini requires history to end with 'model' if we are about to sendMessage()
+          if (history.length > 0 && history[history.length - 1].role === 'user') {
+            history.push({ role: 'model', parts: [{ text: 'Acknowledged.' }] });
+          }
+
           const chat = model.startChat({ history });
           const result = await chat.sendMessage(lastMessage.content);
           return result.response.text();
