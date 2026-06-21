@@ -17,7 +17,7 @@ export function MobileTabBar() {
 
   return (
     <nav
-      className="glass glass--elevated fixed bottom-3 left-3 right-3 z-50 flex justify-evenly items-center py-2 px-2 lg:hidden"
+      className="glass glass--elevated fixed bottom-3 left-1/2 -translate-x-1/2 w-[95%] sm:w-[85%] max-w-[400px] z-50 flex justify-between items-center py-2 px-6 lg:hidden"
       style={{
         borderRadius: "var(--radius-xl)",
         paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))",
