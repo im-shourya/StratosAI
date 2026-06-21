@@ -12,7 +12,6 @@ import { User, Palette, Puzzle, Users } from "lucide-react";
 const SETTINGS_NAV = [
   { label: "Account", icon: User, href: "/settings/account" },
   { label: "Appearance", icon: Palette, href: "/settings/appearance" },
-  { label: "Integrations", icon: Puzzle, href: "/settings/integrations" },
   { label: "Team", icon: Users, href: "/settings/team" },
 ];
 
