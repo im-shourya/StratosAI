@@ -22,17 +22,21 @@ export class LlmService {
   }
 
   async generateResponse(messages: any[], isReportGeneration = false): Promise<string> {
+    // Tier 1: Gemini (fast, reliable)
+    try {
+      this.logger.log('Attempting Gemini');
+      return await this.callGemini(messages, isReportGeneration);
+    } catch (geminiError: any) {
+      this.logger.warn(`Gemini failed: ${geminiError.message}. Falling back to Ollama.`);
+    }
+
+    // Tier 2: Ollama (local fallback)
     try {
       this.logger.log(`Attempting Ollama (${this.ollamaModel})`);
       return await this.callOllama(messages);
-    } catch (error: any) {
-      this.logger.warn(`Ollama failed: ${error.message}. Falling back to Gemini.`);
-      try {
-        return await this.callGemini(messages, isReportGeneration);
-      } catch (geminiError: any) {
-        this.logger.error(`Gemini also failed: ${geminiError.message}`);
-        throw new Error('All LLM tiers failed');
-      }
+    } catch (ollamaError: any) {
+      this.logger.error(`Ollama failed: ${ollamaError.message || ollamaError.code || 'ECONNREFUSED'}`);
+      throw new Error('All LLM tiers failed');
     }
   }
 
@@ -58,7 +62,11 @@ export class LlmService {
 
   private async callGemini(messages: any[], isReportGeneration: boolean): Promise<string> {
     const systemMsg = messages.find(m => m.role === 'system')?.content;
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-1.5-flash'];
+    const modelsToTry = [
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-2.5-flash-preview-05-20'
+    ];
     let lastError: any;
     const maxRetries = 3;
     let baseDelay = 1000;
