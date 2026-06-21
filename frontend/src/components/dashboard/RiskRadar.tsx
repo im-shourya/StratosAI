@@ -10,6 +10,7 @@ interface RiskItem {
 }
 
 function getRiskLevel(score: number) {
+  if (score === 0) return { text: "N/A", color: "var(--color-text-tertiary)" };
   if (score >= 60) return { text: "HIGH", color: "var(--color-danger)" };
   if (score >= 35) return { text: "MED", color: "var(--color-warning)" };
   return { text: "LOW", color: "var(--color-success)" };

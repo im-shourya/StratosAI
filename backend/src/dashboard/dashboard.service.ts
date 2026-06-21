@@ -110,11 +110,11 @@ export class DashboardService {
     }
 
     return [
-      { label: "Technical", score: count > 0 ? technical : 40, stripeStr: "repeating-linear-gradient(45deg, #3B82F6, #3B82F6 2px, #60A5FA 2px, #60A5FA 6px)" },
-      { label: "Financial", score: count > 0 ? financial : 30, stripeStr: "repeating-linear-gradient(45deg, #10B981, #10B981 2px, #34D399 2px, #34D399 6px)" },
-      { label: "Talent", score: count > 0 ? talent : 75, stripeStr: "repeating-linear-gradient(45deg, #EF4444, #EF4444 2px, #F87171 2px, #F87171 6px)" },
-      { label: "Regulatory", score: count > 0 ? regulatory : 20, stripeStr: "repeating-linear-gradient(45deg, #8B5CF6, #8B5CF6 2px, #A78BFA 2px, #A78BFA 6px)" },
-      { label: "Market", score: count > 0 ? market : 15, stripeStr: "repeating-linear-gradient(45deg, #F59E0B, #F59E0B 2px, #FBBF24 2px, #FBBF24 6px)" },
+      { label: "Technical", score: count > 0 ? technical : 0, stripeStr: "repeating-linear-gradient(45deg, #3B82F6, #3B82F6 2px, #60A5FA 2px, #60A5FA 6px)" },
+      { label: "Financial", score: count > 0 ? financial : 0, stripeStr: "repeating-linear-gradient(45deg, #10B981, #10B981 2px, #34D399 2px, #34D399 6px)" },
+      { label: "Talent", score: count > 0 ? talent : 0, stripeStr: "repeating-linear-gradient(45deg, #EF4444, #EF4444 2px, #F87171 2px, #F87171 6px)" },
+      { label: "Regulatory", score: count > 0 ? regulatory : 0, stripeStr: "repeating-linear-gradient(45deg, #8B5CF6, #8B5CF6 2px, #A78BFA 2px, #A78BFA 6px)" },
+      { label: "Market", score: count > 0 ? market : 0, stripeStr: "repeating-linear-gradient(45deg, #F59E0B, #F59E0B 2px, #FBBF24 2px, #FBBF24 6px)" },
     ];
   }
 }
